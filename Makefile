@@ -36,7 +36,7 @@ USER_OPTIONS = -DCLEAR_BSS_SEGMENT -DISR_DEBUGGING_CODE -DSP2_CONFIG
 #
 # We only want to include from the current directory and ~wrc/include
 #
-INCLUDES = -I. -I/home/fac/wrc/include
+INCLUDES = -I.
 
 #
 # Compilation/assembly/linking commands and options
@@ -47,10 +47,10 @@ CPPFLAGS = $(USER_OPTIONS) -nostdinc -I- $(INCLUDES)
 CC = gcc
 CFLAGS = -fno-builtin -Wall -Wstrict-prototypes $(CPPFLAGS)
 
-AS = gas
+AS = as
 ASFLAGS =
 
-LD = gld
+LD = ld
 
 #		
 # Transformation rules - these ensure that all compilation
@@ -190,25 +190,25 @@ depend:
 bootstrap.o: bootstrap.h
 startup.o: bootstrap.h
 isr_stubs.o: bootstrap.h
-ulibs.o: syscall.h headers.h /home/fac/wrc/include/x86arch.h
-c_io.o: c_io.h startup.h support.h /home/fac/wrc/include/x86arch.h
-support.o: startup.h support.h c_io.h /home/fac/wrc/include/x86arch.h
+ulibs.o: syscall.h headers.h x86arch.h
+c_io.o: c_io.h startup.h support.h x86arch.h
+support.o: startup.h support.h c_io.h x86arch.h
 support.o: bootstrap.h
-kalloc.o: headers.h kalloc.h /home/fac/wrc/include/x86arch.h
+kalloc.o: headers.h kalloc.h x86arch.h
 clock.o: headers.h clock.h process.h queue.h stack.h scheduler.h sio.h
-clock.o: startup.h /home/fac/wrc/include/x86arch.h
+clock.o: startup.h x86arch.h
 klibc.o: headers.h
 queue.o: headers.h queue.h process.h clock.h stack.h
 process.o: headers.h process.h clock.h queue.h stack.h
 scheduler.o: headers.h scheduler.h process.h clock.h queue.h stack.h
 sio.o: headers.h sio.h queue.h process.h clock.h stack.h scheduler.h
-sio.o: startup.h /home/fac/wrc/include/uart.h /home/fac/wrc/include/x86arch.h
+sio.o: startup.h uart.h x86arch.h
 stack.o: headers.h stack.h queue.h
-syscall.o: headers.h syscall.h /home/fac/wrc/include/x86arch.h process.h
+syscall.o: headers.h syscall.h x86arch.h process.h
 syscall.o: clock.h queue.h stack.h scheduler.h sio.h system.h types.h
 syscall.o: startup.h ulib.h
 system.o: headers.h system.h types.h process.h clock.h queue.h stack.h
-system.o: bootstrap.h syscall.h /home/fac/wrc/include/x86arch.h sio.h
+system.o: bootstrap.h syscall.h x86arch.h sio.h
 system.o: scheduler.h user.h ulib.h
 ulibc.o: headers.h
 user.o: headers.h user.h
