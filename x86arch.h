@@ -1,63 +1,15 @@
-h54229
-s 00001/00000/00320
-d D 1.4 10/11/21 15:14:30 wrc 4 3
-c (wrc) added MYSTERY vector 0x27 definition
-e
-s 00006/00001/00314
-d D 1.3 05/03/15 15:39:11 wrc 3 2
-c (wrc) added TIMER_MS_PER_TICK, fixed header to conform
-e
-s 00003/00004/00312
-d D 1.2 03/01/27 13:23:27 kar 2 1
-c 
-e
-s 00316/00000/00000
-d D 1.1 02/05/16 15:14:24 kar 1 0
-c date and time created 02/05/16 15:14:24 by kar
-e
-u
-U
-f e 0
-t
-T
-I 1
 /*
-I 3
-** SCCS ID:	%W%	%G%
+** SCCS ID:	@(#)x86arch.h	1.5	03/29/11
 **
-E 3
-D 2
-** SCCS ID:	%W%	%G%
-**
-E 2
 ** File:	x86arch.h
-I 3
 **
-E 3
-D 2
-**
-E 2
 ** Author:	Warren R. Carithers
-I 3
 **
-E 3
-D 2
-**
-E 2
-I 2
 ** Contributor:	K. Reek
-I 3
 **
-E 3
-E 2
 ** Description:	Definitions of constants and macros for use
 **		with the x86 architecture and registers.
-I 2
 **
-D 3
-** SCCS ID:	%W%	%G%
-E 3
-E 2
 */
 
 #ifndef _X86ARCH_H_
@@ -295,24 +247,32 @@
 #define	INT_VEC_SERIAL_PORT_1		0x24
 #define	INT_VEC_PARALLEL_PORT		0x25
 #define	INT_VEC_FLOPPY_DISK		0x26
-I 4
 #define	INT_VEC_MYSTERY			0x27
-E 4
 #define	INT_VEC_MOUSE			0x2c
 
 /*
-** Hardware timer
+** Hardware timer (Intel 8254 Programmable Interval Timer)
 */
-#define	TIMER_TICKS_PER_SECOND		18	/* default ticks per second */
-I 3
-#define	TIMER_MS_PER_TICK		(1000/TIMER_TICKS_PER_SECOND)
-E 3
-#define	TIMER_FREQUENCY			1193000	/* clock frequency */
-#define	TIMER_BASE			0x40	/* I/O port for the timer */
-#define	TIMER_CONTROL_WORD		( TIMER_BASE + 3 )
-#define	TIMER_0				( TIMER_BASE )
-#define	TIMER_1				( TIMER_BASE + 1 )
-#define	TIMER_2				( TIMER_BASE + 2 )
+#define	TIMER_DEFAULT_TICKS_PER_SECOND	18	/* default ticks per second */
+#define	TIMER_DEFAULT_MS_PER_TICK	(1000/TIMER_DEFAULT_TICKS_PER_SECOND)
+#define	TIMER_FREQUENCY			1193182	/* clock cycles/sec  */
+#define	TIMER_BASE_PORT			0x40	/* I/O port for the timer */
+#define	TIMER_0_PORT			( TIMER_BASE_PORT )
+#define	TIMER_1_PORT			( TIMER_BASE_PORT + 1 )
+#define	TIMER_2_PORT			( TIMER_BASE_PORT + 2 )
+#define	TIMER_CONTROL_PORT		( TIMER_BASE_PORT + 3 )
+
+/* Timer 0 settings */
+#define	TIMER_0_SELECT			0xc0	/* select timer 0 */
+#define	TIMER_0_LOAD			0x30	/* load LSB, then MSB */
+#define	TIMER_0_NDIV			0x04	/* divide-by-N counter */
+#define	TIMER_0_SQUARE			0x06	/* square-wave mode */
+#define	TIMER_0_ENDSIGNAL		0x00	/* assert OUT at end of count */
+
+/* Timer 1 settings */
+#define	TIMER_1_SELECT			0x40	/* select timer 1 */
+#define	TIMER_1_READ			0x30	/* read/load LSB then MSB */
+#define	TIMER_1_RATE			0x06	/* square-wave, for USART */
 
 /*
 ** This section is based on parts of Sun's "sys/pic.h" include file.
@@ -371,4 +331,3 @@
 #define	PIC_BUFFERED		0	/* PICs not in buffered mode */
 
 #endif
-E 1

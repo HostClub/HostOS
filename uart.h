@@ -1,37 +1,11 @@
-h00170
-s 00037/00015/00267
-d D 1.2 08/01/27 16:43:27 wrc 2 1
-c (wrc) typo in UA5_FCR_TXSR; added TX FIFO entries; removed Soyata reference from header comments
-e
-s 00282/00000/00000
-d D 1.1 03/01/27 13:22:04 kar 1 0
-c date and time created 03/01/27 13:22:04 by kar
-e
-u
-U
-f e 0
-t
-T
-I 1
 /* File:	uart.h
 ** Author:	M. Reek
-D 2
-** Contributors: K. Reek
-E 2
-I 2
 ** Contributors: K. Reek, W. Carithers
-E 2
 **
 ** Description: Definitions for the 16540/16550 compatible UART1 on the
-D 2
-**		NS PC87309 UA4_SuperI/O Plug & Play Compatible Chip
-**		for Soyata PCs in DSL.
-E 2
-I 2
 **		PCs in the DSL.  Mask definitions are taken from the
 **		manual for the National Semiconductor PC87309 SuperI/O
 **		Plug & Play Compatible Chip.
-E 2
 **
 **		The naming convention is UAx_yyy_zzzzz.  "x" is either 4 or 5
 **		(see below), "yyy" is the name of the register to which this
@@ -44,7 +18,7 @@
 **		matches the name in the chip manual, and another that is more
 **		readable to use in coding.
 **
-** SCCS ID:	%W%	%G%
+** SCCS ID:	@(#)uart.h	1.2	01/27/08
 */
 
 #ifndef	_UART_H
@@ -61,17 +35,10 @@
 
 #define	UA4_PORT		UA4_COM1_IOADDR
 
-D 2
-/********************************************************************
-E 2
-I 2
 /*
 *******************************************************************
-E 2
 ** BANK 0 REGISTERS 
-I 2
 *******************************************************************
-E 2
 */
 
 /*
@@ -142,35 +109,20 @@
 #define UA4_FCR			(UA4_PORT+2)   	/* FIFO Control register - 16550*/
 #define UA4_FIFO_CTL		UA4_FCR
 
-I 2
 #define UA5_FCR_FIFO_RESET	0x00	/* Reset the FIFO */
-E 2
 #define UA5_FCR_FIFO_EN		0x01	/* FIFO Enable */
 #define UA5_FCR_FIFO_ENABLED	UA5_FCR_FIFO_EN
 #define UA5_FCR_RXSR 		0x02	/* Receiver Soft Reset */
 #define UA5_FCR_RX_SOFT_RESET	UA5_FCR_RXSR 
-D 2
-#define UA5_FCR_TXSR		0x05	/* Transmitter Soft Reset */
-E 2
-I 2
 #define UA5_FCR_TXSR		0x04	/* Transmitter Soft Reset */
-E 2
 #define UA5_FCR_TX_SOFT_RESET	UA5_FCR_TXSR
-I 2
 #define UA5_FCR_TXFTH0		0x10	/* TX_FIFO threshold level */
 #define UA5_FCR_TXFTH1		0x20	/* TX_FIFO threshold level */
 #define	UA5_FCR_TXFTH		(UA5_FCR_TXFTH1|UA5_FCR_TXFTH0)
-E 2
 #define UA5_FCR_RXFTH0		0x40	/* RX_FIFO threshold level */
 #define UA5_FCR_RXFTH1		0x80	/* RX_FIFO threshold level */
-D 2
-#define	UA5_FCR_RXFTH		(UA5_FCR_RXFTH0|UA5_FCR_RXFTH1)
-E 2
-I 2
 #define	UA5_FCR_RXFTH		(UA5_FCR_RXFH1|UA5_FCR_RXFH0)
-E 2
 
-I 2
 /* FIFO thresholds */
 
 /* Interrupt when transmitter FIFO gets this many characters */
@@ -184,20 +136,8 @@
 #define UA5_FCR_TX_FIFO_13	0x30	/* TX_FIFO threshold = 13 char */
 #define UA5_FCR_TX_FIFO_13_CHAR	UA5_FCR_TX_FIFO_13
 
-E 2
 /* Interrupt when receiver FIFO gets this many characters */
 
-D 2
-#define UA4_FCR_RX_FIFO_1	0x00	/* RX_FIFO threshold = 1 char */
-#define UA4_FCR_RX_FIFO_1_CHAR	UA4_FCR_RX_FIFO_1
-#define UA4_FCR_RX_FIFO_4	0x40	/* RX_FIFO threshold = 4 char */
-#define UA4_FCR_RX_FIFO_4_CHAR	UA4_FCR_RX_FIFO_4
-#define UA4_FCR_RX_FIFO_8	0x80	/* RX_FIFO threshold = 8 char */
-#define UA4_FCR_RX_FIFO_8_CHAR	UA4_FCR_RX_FIFO_8
-#define UA4_FCR_RX_FIFO_14	0xc0	/* RX_FIFO threshold = 14 char */
-#define UA4_FCR_RX_FIFO_14_CHAR	UA4_FCR_RX_FIFO_14
-E 2
-I 2
 #define UA5_FCR_RX_FIFO_1	0x00	/* RX_FIFO threshold = 1 char */
 #define UA5_FCR_RX_FIFO_1_CHAR	UA5_FCR_RX_FIFO_1
 #define UA5_FCR_RX_FIFO_4	0x40	/* RX_FIFO threshold = 4 char */
@@ -206,7 +146,6 @@
 #define UA5_FCR_RX_FIFO_8_CHAR	UA5_FCR_RX_FIFO_8
 #define UA5_FCR_RX_FIFO_14	0xc0	/* RX_FIFO threshold = 14 char */
 #define UA5_FCR_RX_FIFO_14_CHAR	UA5_FCR_RX_FIFO_14
-E 2
 
 /*
 ** Line Control (available in all banks)
@@ -326,17 +265,10 @@
 #define UA4_UA5_SCRATCH		UA4_UA5_SCR
 
 
-D 2
-/*******************************************************************
-E 2
-I 2
 /*
 ******************************************************************
-E 2
 ** BANK 1 REGISTERS
-I 2
 ******************************************************************
-E 2
 */
 
 #define UA4_LBGD_L		(UA4_PORT+0x00)	/* Baud Divisor (low byte) */
@@ -370,4 +302,3 @@
 
 
 #endif		/* uart.h */
-E 1
