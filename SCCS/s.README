@@ -1,0 +1,271 @@
+h40812
+s 00002/00002/00108
+d D 1.7 11/01/24 15:27:21 wrc 7 6
+c changed sccs id to version/date lines
+e
+s 00025/00004/00085
+d D 1.6 11/01/24 15:26:25 wrc 6 5
+c updated USB slot information
+e
+s 00012/00004/00077
+d D 1.5 09/10/18 16:33:04 wrc 5 4
+c updated for usb flash drive use
+e
+s 00049/00019/00032
+d D 1.4 06/10/14 14:23:34 wrc 4 3
+c minor clarifications and sp1/sp2 compatability update
+e
+s 00002/00001/00049
+d D 1.3 05/03/15 15:49:11 wrc 3 2
+c (wrc) minor wording changes
+e
+s 00016/00005/00034
+d D 1.2 02/05/16 15:14:50 kar 2 1
+c Version 2: improvements based on my experience with 20013 506.
+e
+s 00039/00000/00000
+d D 1.1 02/01/15 16:18:23 kar 1 0
+c date and time created 02/01/15 16:18:23 by kar
+e
+u
+U
+f e 0
+t
+T
+I 4
+D 6
+SP1/SP2 standalone framework README file
+sccs id: %W%	%G%
+E 6
+I 6
+SP1/SP2 standalone framework information
+
+D 7
+File name:  %W%
+Version:    %G%
+E 7
+I 7
+Version:  %W%
+Date:     %G%
+E 7
+E 6
+---------------------------------------------------------------------------
+
+E 4
+I 1
+Notes on the Makefile:
+
+D 4
+	DO NOT USE makemake!  You must edit the given Makefile to tell it
+	about the file(s) you create.  After adding or removing files
+	from the Makefile (or changing your #includes), do a "make depend"
+E 4
+I 4
+	DO NOT USE makemake!  You must edit the given Makefile to tell
+	it about the file(s) you create.  Add your own file names (both 
+	source and object versions) to the U_* macros at the top of the
+	Makefile.
+E 4
+
+I 4
+	After adding or removing files from the Makefile (or changing
+	your #includes), do a "make depend" to adjust the Makefile's
+	dependency entries.
+
+E 4
+To create your program:
+
+D 4
+	make
+E 4
+I 4
+	* run 'make' in your project directory
+E 4
+
+I 5
+To copy it onto a USB flash drive:
+
+D 6
+	* run 'make usbu' to use the upper front-panel USB slot
+	* run 'make usbl' to use the lower front-panel USB slot
+E 6
+I 6
+	All machines in the DSL have at least two front-panel USB slots
+	located at the bottom on the front of the machine; some have a
+	third slot, located next to the floppy disk drive.  To copy a
+	bootable image onto a flash drive inserted in one of these slots,
+	you must specify the slot position.
+E 6
+
+I 6
+	On the older machines in the lab, the two USB slots are arranged
+	vertically, and are referred to as the upper (usbu) and lower
+	(usbl) slots.  On the newer machines, the slots are arranged
+	horizontally, and are referred to as the left (usbl) and right
+	(usbr) slots.  On newer machines with a third USB slot, that slot
+	is the upper (usbu) USB slot.
+
+	* run 'make usbu' to use the upper front-panel USB slot (on any
+	  system)
+
+	* run 'make usbl' to use the lower (on an "older" system) or the
+	  left (on a "newer" system) front-panel USB slot
+
+	* run 'make usbr' to use the right front-panel USB slot (on a
+	  "newer" system)
+
+E 6
+E 5
+To copy it onto a 3.5" floppy in the drive:
+
+D 4
+	make floppy
+E 4
+I 4
+	* run 'make floppy' in your project directory
+E 4
+
+I 4
+To boot your program:
+
+D 5
+	* be sure you have copied it to floppy disk
+E 5
+I 5
+	* be sure you have copied it to a bootable medium
+E 5
+	* shut down Solaris by executing the 'uhalt' command
+D 5
+	* insert your floppy disk in the drive
+E 5
+I 5
+	* insert the bootable medium
+E 5
+	* push the reset button on the front of the machine
+
+	DO NOT just push the reset button - Solaris must be shut down
+	correctly in order to avoid damaging the filesystems.
+
+To reboot Solaris:
+
+D 5
+	* take your floppy disk out of the drive
+E 5
+I 5
+	* take your bootable medium out of the machine
+E 5
+	* push the reset button
+
+E 4
+Compiling your program creates several files:
+
+	prog.o	linked, object form of the system
+
+	prog.b	binary version of the system - generated from prog.o
+		by removing all the object file headers and symbol table
+
+D 4
+	prog.nl	namelist of the prog.o file - lists all the global symbols,
+		their values, and the section of memory they're in (Text,
+		Data, Bss)
+E 4
+I 4
+	prog.nl	namelist of the prog.o file - lists all global symbols,
+		their values, and the program section they're defined in
+		(Text, Data, Bss)
+E 4
+
+D 4
+	prog.dis a disassembly of the prog.o file - a text version of the
+		binary machine code
+
+E 4
+D 2
+	prog.img the binary system image - contains the bootstrap, the
+		protected mode switch code, ans the system, in this layout:
+E 2
+I 2
+D 5
+	disk.image the binary system image - contains the bootstrap, the
+E 5
+I 5
+	*.image	the binary system image - contains the bootstrap, the
+E 5
+		protected mode startup code, and your stuff, in this layout:
+E 2
+
+			bootstrap	first sector
+			switch code	second sector
+D 2
+			system		third through last sector
+E 2
+I 2
+			your program	sectors 3 through n+2
+			next file	n+3 through p+n+2
+			next file	p+n+3 through q+p+n+2
+			etc. (see below)
+I 5
+
+		This file will be named floppy.image or usb.image,
+		depending on which device you'll be using.
+E 5
+E 2
+	
+D 2
+	modify	used to patch the system length into the boot sector
+		of the prog.img file
+E 2
+I 2
+	BuildImage used to patch the system length into the boot sector
+		of the disk.image file
+E 2
+	
+I 2
+D 4
+Details on loading additional files
+E 4
+I 4
+	Offsets	prints byte offsets for major structures (only present
+		in SP2 distributions)
+E 4
+
+D 4
+	You can load additional files into memory by adding the name of the
+	file and the address where you want it loaded to the end of the
+	BuildImage command in the Makefile.  However, because the loading
+D 3
+	is done in real mode, you may not load into addresses larger than
+E 3
+I 3
+	is done in real mode, you cannot load into addresses larger than
+E 3
+	0x9ffff.
+E 4
+I 4
+Other things you can 'make':
+E 4
+
+I 3
+D 4
+------------------------------------------------
+E 3
+E 2
+SCCS ID: %W%	%G%
+E 4
+I 4
+	prog.dis a disassembly of the prog.o file - a text version of the
+		binary machine code
+	
+	clean	deletes all object, listing, and binary files
+
+	depend	recreates the dependency lists in the Makefile
+	
+Loading additional files:
+
+	You can load additional files into memory by adding the name of
+	the file and the address where you want it loaded to the end of
+	the BuildImage command in the Makefile.  However, because the
+	loading is done in real mode, you cannot load into addresses
+	above 0x9ffff.
+E 4
+E 1
