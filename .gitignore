@@ -1,4 +1,6 @@
 *.lst
+*.b
+*.s
 *.o
 *.image
 build/
