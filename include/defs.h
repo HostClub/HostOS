@@ -21,7 +21,9 @@
 
 // null pointer
 
+#ifndef NULL
 #define	NULL		0
+#endif
 
 // status values
 
