@@ -4,7 +4,7 @@ USER_OPTIONS = -DCLEAR_BSS_SEGMENT -DISR_DEBUGGING_CODE -DSP2_CONFIG
 INCLUDES = -I. -I../include
 
 CPP = cpp
-CPPFLAGS = $(USER_OPTIONS) -nostdinc -I- $(INCLUDES)
+CPPFLAGS = $(USER_OPTIONS) -nostdinc -iquote $(INCLUDES)
 
 CC = gcc
 CFLAGS = -fno-builtin -Wall -Wstrict-prototypes $(CPPFLAGS)

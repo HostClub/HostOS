@@ -91,5 +91,5 @@ clean:
 	cd boot && make clean
 	cd kernel && make clean
 	cd lib && make clean
-	cd build && rm -f *.o && rm -f *.b && rm -f *.nl && rm -f *.image
+	cd build && rm -f *.o *.b *.nl *.image
 	cd utils && rm -f BuildImage && rm -f Offsets
