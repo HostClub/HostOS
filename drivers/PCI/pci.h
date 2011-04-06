@@ -55,8 +55,21 @@ struct _pci_bus
 int CONFIG_ADDRESS = 0xCF8;
 int CONFIG_DATA = 0xCFC;
 
-struct _pci_bus * list_pci();
+//
+//GLOBAL VARIABLES
+//
 
-struct _pci_dev * find_pci(struct _pci_dev * search);
+struct _pci_bus root;
+
+
+//
+//METHOD HEADERS
+//
+
+void _pci_init(void);
+
+uint32_t _pci_list(struct _pci_bus * bus);
+
+struct _pci_dev * _find_pci(struct _pci_dev * search);
 
 uint16_t _pci_config_read_word(uint16_t bus , uint16_t slot , uint16_t function , uint16_t offset);
