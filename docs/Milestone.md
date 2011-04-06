@@ -3,7 +3,7 @@
 EHCI  
 Processor Detection/Info  
 PCI  
-Segmentation  
+Segmentation  [Removed, segmentation is thought of as legacy now (Thanks 1993 Intel SDM!); just doing paging]
 
 4/21
 ====
