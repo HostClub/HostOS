@@ -63,6 +63,8 @@ void user_s( void ); void user_t( void ); void user_u( void );
 void user_v( void ); void user_w( void ); void user_x( void );
 void user_y( void ); void user_z( void );
 
+void checkCPUs( void );
+
 /*
 ** Users A, B, and C are identical, except for the character they
 ** print out via writec().  Each prints its ID, then loops 30
@@ -691,6 +693,37 @@ void idle( void ) {
 
 
 /*
+** CPU Check; Checks for CPUID
+*/
+
+void checkCPUs() {
+	int id;
+
+	asm ( "pushfl;\
+	       pop    %%eax;             /* move EFLAGS into eax */\
+	       mov    %%eax, %%ecx;      /* save a copy into ecx */\
+	       or     %%eax, 0x200000;   /* attempt to write ID (bit 21) */\
+	       push   %%eax;\
+	       popfl;                    /* push it back */\
+	       pushfl;\
+	       pop    %%eax;             /* move EFALGS back into eax */\
+	       xor    %%eax, %%ecx;      /* test it against the original value */\
+	       shrl   $21,   %%eax;\
+	       and    $1,    %%eax;      /* only look at ID (bit 21) */"
+	      : "=r"(id)        // output ID into id
+	      :                 // no input
+	      : "%eax", "%ecx"  //eax and ecx get clobbered
+	);
+
+	if( id ) {
+		c_puts( "CPUID Supported!\n" );
+	} else {
+		c_puts( "CPUID not supported!!!\n" );
+	}
+}
+
+
+/*
 ** Initial process; it starts the other top-level user processes.
 */
 
@@ -714,6 +747,8 @@ void init( void ) {
 		c_puts( "init: can't exec idle\n" );
 		exit( X_FAILURE );
 	}
+
+	checkCPUs();
 
 #ifdef SPAWN_A
 	pid = fork();
