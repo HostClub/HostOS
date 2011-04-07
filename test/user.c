@@ -721,7 +721,9 @@ void idle( void ) {
 #define VENDOR_ID    0
 #define FEATURE_INFO 1
 
-#define SIG_I7 0x106A5
+#define SIG_I7    0x106A5
+#define SIG_CORE2 0x1067A
+
 
 void checkCPUs() {
 	uint32_t id;
@@ -769,7 +771,10 @@ void checkCPUs() {
 	c_printf("Signature:       0x%x (", id);
 	switch (id) {
 		case SIG_I7:
-			c_puts("Core i7 or Xeon Processor)\n");
+			c_puts("Core i7 Processor)\n");
+			break;
+		case SIG_CORE2:
+			c_puts("Core 2 Extreme Processor)\n");
 			break;
 		default:
 			c_puts("Unknown Processor)\n");
