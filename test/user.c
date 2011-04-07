@@ -696,30 +696,87 @@ void idle( void ) {
 ** CPU Check; Checks for CPUID
 */
 
-void checkCPUs() {
-	int id;
+#define WRITE_EFLAGS(x) asm( "push  %%eax;\
+                              popfl;"\
+                            :\
+                            : "a"(x)\
+                           );
 
-	asm ( "pushfl;\
-	       pop    %%eax;             /* move EFLAGS into eax */\
-	       mov    %%eax, %%ecx;      /* save a copy into ecx */\
-	       or     %%eax, 0x200000;   /* attempt to write ID (bit 21) */\
-	       push   %%eax;\
-	       popfl;                    /* push it back */\
-	       pushfl;\
-	       pop    %%eax;             /* move EFALGS back into eax */\
-	       xor    %%eax, %%ecx;      /* test it against the original value */\
-	       shrl   $21,   %%eax;\
-	       and    $1,    %%eax;      /* only look at ID (bit 21) */"
-	      : "=r"(id)        // output ID into id
-	      :                 // no input
-	      : "%eax", "%ecx"  //eax and ecx get clobbered
-	);
+#define READ_EFLAGS(x) asm( "pushfl;\
+                             pop  %%eax;"\
+                            : "=a"(x)\
+                            :\
+                          );
+
+#define CPUID_D(c, d) asm( "cpuid;"\
+                           : "=a"(*(uint32_t *)d), "=b"(*(uint32_t *)(d + 4)), "=d"(*(uint32_t *)(d + 8)), "=c"(*(uint32_t *)(d + 12))\
+                           : "a"(c)\
+                         );
+
+#define CPUID_R(c, r) asm( "cpuid;"\
+                           : "=a"(r)\
+                           : "a"(c)\
+                         );
+
+#define VENDOR_ID    0
+#define FEATURE_INFO 1
+
+#define SIG_I7 0x106A5
+
+void checkCPUs() {
+	uint32_t id;
+	int i;
+	unsigned char data[17];
+	uint32_t maxCpuIdOp;
+
+	READ_EFLAGS( id );
+	WRITE_EFLAGS( id | 0x200000 );
+	READ_EFLAGS( id );
+	id = (id >> 21) & 1;
 
 	if( id ) {
 		c_puts( "CPUID Supported!\n" );
 	} else {
 		c_puts( "CPUID not supported!!!\n" );
+		return;
 	}
+
+
+	CPUID_D(VENDOR_ID, data);
+	maxCpuIdOp = (uint32_t)data;
+	data[16] = 0;
+
+	c_printf( "Max CPUID Op: %d\n", maxCpuIdOp );
+	c_printf( "CPU Vendor: '%s'\n", (data + 4) );
+
+	CPUID_D(FEATURE_INFO, data);
+	//id = data[0] << 0 | data[1] << 8 | data[2] << 16 | data[3] << 24;
+	id = *((uint32_t *)data) & 0x0FFF3FFF;
+	char steppingID =     (id & 0x0000000F) >> 0;
+	char modelNumber =    (id & 0x000000F0) >> 4;
+	char familyCode =     (id & 0x00000F00) >> 8;
+	char type =           (id & 0x00003000) >> 12;
+	char extendedModel =  (id & 0x000F0000) >> 16;
+	char extendedFamily = (id & 0x0FF00000) >> 20;
+
+	c_printf("Stepping ID:     %d\n", steppingID);
+	c_printf("Model Number:    %d\n", modelNumber);
+	c_printf("Family Code:     %d\n", familyCode);
+	c_printf("Type:            %d\n", type);
+	c_printf("Extended Model:  %d\n", extendedModel);
+	c_printf("Extended Family: %d\n", extendedFamily);
+
+	c_printf("Signature:       0x%x (", id);
+	switch (id) {
+		case SIG_I7:
+			c_puts("Core i7 or Xeon Processor)\n");
+			break;
+		default:
+			c_puts("Unknown Processor)\n");
+	}
+
+	c_printf("Features (ECX): 0x%x\n", *((uint32_t *)data + 12));
+	c_printf("Features (EDX): 0x%x\n", *((uint32_t *)data + 8));
 }
 
 
