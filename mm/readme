@@ -1,0 +1,23 @@
+The page structure:
+
+31     12 11   9  8  7 6 5 4  3 2 1 0
+______________________________________
+| frame  | AVAIL |RSVD|D|A|RSVD|U|R|P|
+|address |       |    | | |    |S|W| |
+--------------------------------------
+
+P: page present in memory
+
+R/W: if set page is writeable
+
+U/S: If set it is a user-mode page
+
+RSVD: Used by the CPU
+
+A: page has been accessed
+
+D: has been written too
+
+AVAIL: unused
+
+Page frame addres: high 20 bits of the frame address in phys memory
