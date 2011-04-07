@@ -75,3 +75,4 @@ uint32_t _pci_list(struct _pci_bus * bus);
 struct _pci_dev * _find_pci(struct _pci_dev * search);
 
 uint16_t _pci_config_read_word(uint8_t bus , uint8_t slot , uint8_t function , uint8_t offset);
+

@@ -1,7 +1,6 @@
 #include "pci.h"
 #include "startup.h"
 #include "c_io.h"
-
 void _pci_init(void)
 {
 	//Need to memset root to 0
@@ -45,7 +44,6 @@ uint16_t _pci_config_read_word(uint8_t bus , uint8_t device, uint8_t function , 
 	//TODO: Remove magic numbers
 	address = (uint64_t)((lbus << 16) | (lslot << 11) |
 			(lfunc << 8) | (offset & 0xfc) | ((uint32_t)0x80000000));
-
 	/* write out the address */
 	__outl (CONFIG_ADDRESS, address);
 	/* read in the data */
