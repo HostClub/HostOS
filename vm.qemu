@@ -1,0 +1,5 @@
+#!/bin/sh
+KVM=$(lsmod | grep kvm)
+[ -n "$KVM" ] && KVM='-enable-kvm'
+[ -z "$ROOT" ] && ROOT='..'
+qemu $KVM -M pc -cpu qemu32 -fda build/floppy.image -boot a -serial stdio -no-acpi

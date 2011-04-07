@@ -28,6 +28,9 @@
 // need the exit() prototype
 #include "ulib.h"
 
+#include "pci.h"
+
+
 /*
 ** PUBLIC FUNCTIONS
 */
