@@ -26,7 +26,7 @@
 #define	SCREEN_MIN_X	0
 #define	SCREEN_MIN_Y	0
 #define	SCREEN_X_SIZE	80
-#define	SCREEN_Y_SIZE	25
+#define	SCREEN_Y_SIZE	50
 #define	SCREEN_MAX_X	( SCREEN_X_SIZE - 1 )
 #define	SCREEN_MAX_Y	( SCREEN_Y_SIZE - 1 )
 
