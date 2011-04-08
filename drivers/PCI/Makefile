@@ -34,5 +34,4 @@ all: pci.o
 .c.o:
 	$(CC) $(CFLAGS) -c $*.c
 
-clean:
-	rm -f *.nl *.lst *.b *.o *.image *.dis BuildImage Offsets
+
