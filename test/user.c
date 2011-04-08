@@ -700,31 +700,37 @@ void idle( void ) {
                               popfl;"\
                             :\
                             : "a"(x)\
-                           );
+                           )
 
 #define READ_EFLAGS(x) asm( "pushfl;\
                              pop  %%eax;"\
                             : "=a"(x)\
                             :\
-                          );
+                          )
 
 #define CPUID_D(c, d) asm( "cpuid;"\
-                           : "=a"(*(uint32_t *)d), "=b"(*(uint32_t *)(d + 4)), "=c"(*(uint32_t *)(d + 8)), "=d"(*(uint32_t *)(d + 12))\
-                           : "a"(c)\
-                         );
+                          : "=a"(*(uint32_t *)d), "=b"(*(uint32_t *)(d + 4)), "=c"(*(uint32_t *)(d + 8)), "=d"(*(uint32_t *)(d + 12))\
+                          : "a"(c)\
+                         )
+
+#define CPUID_D_C(c, r, d) asm( "cpuid;"\
+                               : "=a"(*(uint32_t *)d), "=b"(*(uint32_t *)(d + 4)), "=c"(*(uint32_t *)(d + 8)), "=d"(*(uint32_t *)(d + 12))\
+                               : "a"(c), "c"(r)\
+                              )
 
 #define CPUID_R(c, r) asm( "cpuid;"\
                            : "=a"(r)\
                            : "a"(c)\
-                         );
+                         )
 
 //Swap the third and fourth registers (to undo the backward compatibility)
 #define UNSCRAMBLE(d) (*(uint32_t *)((d) + 8)) ^= (*(uint32_t *)((d) + 12));\
                       (*(uint32_t *)((d) + 12)) ^= (*(uint32_t *)((d) + 8));\
-                      (*(uint32_t *)((d) + 8)) ^= (*(uint32_t *)((d) + 12));
+                      (*(uint32_t *)((d) + 8)) ^= (*(uint32_t *)((d) + 12))
 
 #define VENDOR_ID      0x00000000
 #define FEATURE_INFO   0x00000001
+#define D_CACHE_PARAM  0x00000004
 #define EXT_FUNCS      0x80000000
 #define EXT_FEATURES   0x80000001
 #define BRAND_STRING1  0x80000002
@@ -812,6 +818,48 @@ void checkCPUs() {
 	c_printf("Type:            %d\n", type);
 	c_printf("Extended Model:  %d\n", extendedModel);
 	c_printf("Extended Family: %d\n", extendedFamily);
+
+	id = *((uint32_t *)(data + 4));
+	c_printf("\nLogical Processors: %d\n", (id & 0x00FF0000) >> 16);
+
+
+	// Enumerate the deterministic cache parameters
+	CPUID_D_C(D_CACHE_PARAM, 0, data);
+	UNSCRAMBLE(data);
+
+	id = *((uint32_t *)(data));
+	c_printf("APIC IDs:           %d\n", 1 + ((id & 0xFC000000) >> 26));
+
+	i = 0;
+	while ((id & 0x0F) != 0) {
+		char sharingThreads = ((id & 0x03FFC000) >> 14) + 1;
+		char level = (id & 0xF0) >> 4;
+		char type = (id & 0x0F);
+
+		c_printf("Cache Number: %d   ", i);
+		c_printf("  Threads sharing this cache: %d   ", sharingThreads);
+		c_printf("  Level: %d   ", level);
+		c_printf("  Type: ");
+		switch (type) {
+			case 1:
+				c_printf("Data");
+				break;
+			case 2:
+				c_printf("Instruction");
+				break;
+			case 3:
+				c_printf("Unified");
+				break;
+			default:
+				c_printf("INVALID");
+		}
+
+		c_putchar('\n');
+
+		i++;
+		CPUID_D_C(D_CACHE_PARAM, i, data);
+		id = *((uint32_t *)(data));
+	}
 }
 
 
