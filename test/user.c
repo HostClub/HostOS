@@ -709,7 +709,7 @@ void idle( void ) {
                           );
 
 #define CPUID_D(c, d) asm( "cpuid;"\
-                           : "=a"(*(uint32_t *)d), "=b"(*(uint32_t *)(d + 4)), "=d"(*(uint32_t *)(d + 8)), "=c"(*(uint32_t *)(d + 12))\
+                           : "=a"(*(uint32_t *)d), "=b"(*(uint32_t *)(d + 4)), "=c"(*(uint32_t *)(d + 8)), "=d"(*(uint32_t *)(d + 12))\
                            : "a"(c)\
                          );
 
@@ -718,8 +718,18 @@ void idle( void ) {
                            : "a"(c)\
                          );
 
-#define VENDOR_ID    0
-#define FEATURE_INFO 1
+//Swap the third and fourth registers (to undo the backward compatibility)
+#define UNSCRAMBLE(d) (*(uint32_t *)((d) + 8)) ^= (*(uint32_t *)((d) + 12));\
+                      (*(uint32_t *)((d) + 12)) ^= (*(uint32_t *)((d) + 8));\
+                      (*(uint32_t *)((d) + 8)) ^= (*(uint32_t *)((d) + 12));
+
+#define VENDOR_ID      0x00000000
+#define FEATURE_INFO   0x00000001
+#define EXT_FUNCS      0x80000000
+#define EXT_FEATURES   0x80000001
+#define BRAND_STRING1  0x80000002
+#define BRAND_STRING2  0x80000003
+#define BRAND_STRING3  0x80000004
 
 #define SIG_I7    0x106A5
 #define SIG_CORE2 0x1067A
@@ -736,24 +746,56 @@ void checkCPUs() {
 	READ_EFLAGS( id );
 	id = (id >> 21) & 1;
 
-	if( id ) {
-		c_puts( "CPUID Supported!\n" );
-	} else {
+	if( !id ) {
 		c_puts( "CPUID not supported!!!\n" );
 		return;
 	}
 
 
 	CPUID_D(VENDOR_ID, data);
+	UNSCRAMBLE(data);
 	maxCpuIdOp = (uint32_t)data;
 	data[16] = 0;
 
 	c_printf( "Max CPUID Op: %d\n", maxCpuIdOp );
 	c_printf( "CPU Vendor: '%s'\n", (data + 4) );
 
+	CPUID_R(EXT_FUNCS, id);
+	if (id >= BRAND_STRING3) {
+		//Supports extended functions
+		CPUID_D(BRAND_STRING1, data);
+		c_printf("%s", data);
+		CPUID_D(BRAND_STRING2, data);
+		c_printf("%s", data);
+		CPUID_D(BRAND_STRING3, data);
+		c_printf("%s\n", data);
+
+		CPUID_D(EXT_FEATURES, data);
+		c_printf("Extended Features (ECX):  0x%x\n", *((uint32_t *)(data + 8)));
+		c_printf("Extended Features (EDX):  0x%x\n", *((uint32_t *)(data + 12)));
+	} else {
+		//Doesn't support extended functions
+		CPUID_D(FEATURE_INFO, data);
+		UNSCRAMBLE(data);
+		id = *((uint32_t *)data) & 0x0FFF3FFF;
+
+		c_printf("Signature:       0x%x (", id);
+		switch (id) {
+			case SIG_I7:
+				c_puts("Core i7 Processor)\n");
+				break;
+			case SIG_CORE2:
+				c_puts("Core 2 Extreme Processor)\n");
+				break;
+			default:
+				c_puts("Unknown Processor)\n");
+		}
+	}
+
 	CPUID_D(FEATURE_INFO, data);
-	//id = data[0] << 0 | data[1] << 8 | data[2] << 16 | data[3] << 24;
+	UNSCRAMBLE(data);
 	id = *((uint32_t *)data) & 0x0FFF3FFF;
+
 	char steppingID =     (id & 0x0000000F) >> 0;
 	char modelNumber =    (id & 0x000000F0) >> 4;
 	char familyCode =     (id & 0x00000F00) >> 8;
@@ -761,27 +803,15 @@ void checkCPUs() {
 	char extendedModel =  (id & 0x000F0000) >> 16;
 	char extendedFamily = (id & 0x0FF00000) >> 20;
 
+	c_printf("Features (ECX): 0x%x\n", *((uint32_t *)data + 8));
+	c_printf("Features (EDX): 0x%x\n", *((uint32_t *)data + 12));
+
 	c_printf("Stepping ID:     %d\n", steppingID);
 	c_printf("Model Number:    %d\n", modelNumber);
 	c_printf("Family Code:     %d\n", familyCode);
 	c_printf("Type:            %d\n", type);
 	c_printf("Extended Model:  %d\n", extendedModel);
 	c_printf("Extended Family: %d\n", extendedFamily);
-
-	c_printf("Signature:       0x%x (", id);
-	switch (id) {
-		case SIG_I7:
-			c_puts("Core i7 Processor)\n");
-			break;
-		case SIG_CORE2:
-			c_puts("Core 2 Extreme Processor)\n");
-			break;
-		default:
-			c_puts("Unknown Processor)\n");
-	}
-
-	c_printf("Features (ECX): 0x%x\n", *((uint32_t *)data + 12));
-	c_printf("Features (EDX): 0x%x\n", *((uint32_t *)data + 8));
 }
 
 
