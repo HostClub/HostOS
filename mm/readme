@@ -1,23 +1,50 @@
-The page structure:
+Page structures taken from diagrams on : http://wiki.osdev.org/Paging
 
-31     12 11   9  8  7 6 5 4  3 2 1 0
-______________________________________
-| frame  | AVAIL |RSVD|D|A|RSVD|U|R|P|
-|address |       |    | | |    |S|W| |
---------------------------------------
+The Page Directory:
 
-P: page present in memory
+31        12 11    9 8 7 6 5 4 3 2 1 0
+ _____________________________________
+| page tbl  | AVAIL |G|S|0|A|D|W|U|R|P|
+|  address  |       | | | | | | | | | |
+ -------------------------------------
 
-R/W: if set page is writeable
+[With 4mb pages,  bits 21 - 11 are Reserved]
 
-U/S: If set it is a user-mode page
+G: Ignored
 
-RSVD: Used by the CPU
+S: Page Size; stores the page size for the entry.  if set 4MiB, otherwise 4KiB
+    (Note: 4 MiB pages have to have PSE enabled)
 
 A: page has been accessed
 
-D: has been written too
+D: Cahce Disable; if set the page will not be cahced 
 
-AVAIL: unused
+W: 'Write-Through'; if set, write-through caching is enables, if not write-back
+     caching is enabled
 
-Page frame addres: high 20 bits of the frame address in phys memory
+U: User\Supervisor'; Controls access to the page based on privilege level.  If
+    set it can be accessed by all, otherwise only supervisor
+
+R: 'Read/Write'; if set the page is read/write, otherwise read only.
+     (The WP bit determises if this is applied to userland [3A 2-20])
+
+P: Present; if the bit is set, the page is in physical memory at the moment.
+    (If the page is called, but not present, a page fault will occur) 
+
+
+Page Table
+
+31        12 11    9 8 7 6 5 4 3 2 1 0
+ _____________________________________
+| phys page | AVAIL |G|0|D|A|C|W|U|R|P|
+|  address  |       | | | | | | | | | |
+ -------------------------------------
+
+G- Global - prevents the translation lookaside buffer from updating the address
+D- Dirty - page has been written to
+A- Accessed
+C- Cache disabled
+W- Write-through
+U- User/Supervisor
+R- Read/Write
+P- Present
