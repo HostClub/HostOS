@@ -15,8 +15,8 @@
 PCI_C_SRC = PCI/pci.c
 PCI_C_OBJ = ../build/pci.o
 
-USB_C_SRC = 
-USB_C_OBJ = 
+USB_C_SRC = USB/usb_ehci.c 
+USB_C_OBJ = ../build/usb_ehci.o
 
 U_C_SRC = 
 U_C_OBJ = 
@@ -32,6 +32,7 @@ all:	build
 build: 
 	@echo "Building HostOS drivers....."
 	cd PCI && make && mv *.o ../../build/.
+	cd USB && make && mv *.o ../../build/.
 
 C_OBJ =  $(U_C_OBJ)
 C_SRC =  $(U_C_SRC)
