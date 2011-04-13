@@ -63,7 +63,6 @@ void user_s( void ); void user_t( void ); void user_u( void );
 void user_v( void ); void user_w( void ); void user_x( void );
 void user_y( void ); void user_z( void );
 
-void checkCPUs( void );
 
 /*
 ** Users A, B, and C are identical, except for the character they
@@ -740,6 +739,75 @@ void idle( void ) {
 #define SIG_I7    0x106A5
 #define SIG_CORE2 0x1067A
 
+typedef struct MPConfigTable {
+	char signature[4];
+	uint16_t baseTableLength;
+	uint8_t specRev;
+	uint8_t checksum;
+	char oemID[8];
+	char productID[12];
+	void *oemTable;
+	uint16_t oemTableSize;
+	uint16_t entryCount;
+	void *localAPIC;
+	uint16_t extendedTableLength;
+	uint8_t extendedTableChecksum;
+	uint8_t reserved;
+} MPConfigTable_t;
+
+typedef struct MPFloatPointer {
+	char signature[4];
+	MPConfigTable_t *table;
+	uint8_t tableLength;
+	uint8_t specRev;
+	uint8_t checksum;
+	uint8_t features[5];
+} MPFloatPointer_t;
+
+void checkCPUs( void );
+MPFloatPointer_t *findMPFPS( void );
+void strncpy( char *, char *, int );
+
+
+#define MPFPS_LOC_BIOSROM_LOW  0x0F0000
+#define MPFPS_LOC_BIOSROM_HIGH 0x100000
+#define EBDA_BASE              0x9C000
+
+void strncpy(char *src, char *dst, int len) {
+	dst[len] = 0;
+	while (len--) {
+		dst[len] = src[len];
+	}
+}
+
+MPFloatPointer_t *findMPFPS() {
+	//check to see is the extended BIOS data area is defined
+	void *ebdaBase = (void *)EBDA_BASE;
+	if (ebdaBase) {
+		//search for the floating pointer structure in the extended BIOS data area
+		char *loc = (char *)ebdaBase;
+		while ((uint32_t)loc < 0xA0000) {
+			if (*loc == '_' && *(loc + 1) == 'M' && *(loc + 2) == 'P' && *(loc + 3) == '_') {
+				return (MPFloatPointer_t *)loc;
+			}
+			loc += 16;
+		}
+	} else {
+		//search for the structure in the last 1KB of system base memory
+
+	}
+
+	//search for the structure in BIOS ROM
+	char *loc = (char *)MPFPS_LOC_BIOSROM_LOW;
+	while ((uint32_t)loc < MPFPS_LOC_BIOSROM_HIGH - 4) {
+		if (*loc == '_' && *(loc + 1) == 'M' && *(loc + 2) == 'P' && *(loc + 3) == '_') {
+			return (MPFloatPointer_t *)loc;
+		}
+		loc += 16;
+	}
+
+	return NULL;
+}
 
 void checkCPUs() {
 	uint32_t id;
@@ -812,11 +880,11 @@ void checkCPUs() {
 	c_printf("Features (ECX): 0x%x\n", *((uint32_t *)data + 8));
 	c_printf("Features (EDX): 0x%x\n", *((uint32_t *)data + 12));
 
-	c_printf("Stepping ID:     %d\n", steppingID);
-	c_printf("Model Number:    %d\n", modelNumber);
-	c_printf("Family Code:     %d\n", familyCode);
-	c_printf("Type:            %d\n", type);
-	c_printf("Extended Model:  %d\n", extendedModel);
+	c_printf("Stepping ID: %d  ", steppingID);
+	c_printf("Model Number: %d  ", modelNumber);
+	c_printf("Family Code: %d  ", familyCode);
+	c_printf("Type: %d  ", type);
+	c_printf("Extended Model: %d  ", extendedModel);
 	c_printf("Extended Family: %d\n", extendedFamily);
 
 	id = *((uint32_t *)(data + 4));
@@ -860,6 +928,26 @@ void checkCPUs() {
 		CPUID_D_C(D_CACHE_PARAM, i, data);
 		id = *((uint32_t *)(data));
 	}
+
+	char temp[13];
+
+	MPFloatPointer_t *mpStruct = findMPFPS();
+	/*c_printf("MP Floating Pointer: 0x%x\n", mpStruct);
+	strncpy(mpStruct->signature, temp, 4);
+	c_printf("Signature: %s\n", temp);
+	c_printf("Table Address: 0x%x\n", mpStruct->table);
+	c_printf("Table Length: 0x%x\n", mpStruct->tableLength * 16);
+	c_printf("Revision: 0x%x\n", mpStruct->specRev);
+	c_printf("Checksum: 0x%x\n", mpStruct->checksum);
+	c_printf("Features: 0x%x 0x%x 0x%x 0x%x 0x%x\n", mpStruct->features[0], mpStruct->features[1], mpStruct->features[2], mpStruct->features[3], mpStruct->features[4]);*/
+
+	MPConfigTable_t *config = mpStruct->table;
+	strncpy(config->signature, temp, 4);
+	c_printf("Signature: %s\n", temp);
+	strncpy(config->oemID, temp, 8);
+	c_printf("OEM ID: %s\n", temp);
+	strncpy(config->productID, temp, 12);
+	c_printf("Product ID: %s\n", temp);
 }
 
 
