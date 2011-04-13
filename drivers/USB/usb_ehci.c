@@ -62,11 +62,25 @@ uint32_t _OPERATIONALBASE;
 #define USBCMD_OFFSET 0x00
 uint32_t _USBCMD;
 
+
+
 #define USBSTS_OFFSET 0x04
 uint32_t _USBSTS;
 
 #define USBINTR_OFFSET 0x08
 uint32_t _USBINTR;
+
+
+//Interrupt enable flags
+
+//Refer to table 2-11 of the EHCI spec
+
+#define ASYNC_ADVANCE_ENABLE 0x00000020
+#define HOST_SYSTEM_ERROR_ENABLE 0x00000010
+#define FRAME_LIST_ROLLOVER_INT_ENABLE 0x00000008
+#define PORT_CHANGE_INT_ENABLE 0x00000004
+#define USB_ERROR_INT_ENABLE 0x00000002
+#define USB_INT_ENABLE 0x00000001
 
 #define FRINDEX_OFFSET 0x0C
 uint32_t _FRINDEX;
@@ -100,11 +114,17 @@ void usb_ehci_init(struct _pci_dev * device)
 
 	c_printf("usbbase %x\n" , _BASE);
 
+
+	//Not sure if I should store the data or the address in the variables
 	_CAPLENGTH = *(uint8_t *)(_BASE + CAPLENGTH_OFFSET);
 
 	_HSCPARAMS = *(uint32_t *)(_BASE + HSCPARAMS_OFFSET);
 
 	c_printf("HSCPARAMS %x\n" , _HSCPARAMS);
+
+	_HCCPARAMS = *(uint32_t *)(_BASE + HCCPARAMS_OFFSET);
+
+	c_printf("HCCPARAMS %x\n" , _HCCPARAMS);
 
 	uint32_t n_ports = ( _HSCPARAMS & N_PORTS_MASK ) >> N_PORTS_OFFSET;
 
@@ -114,6 +134,9 @@ void usb_ehci_init(struct _pci_dev * device)
 
 	c_printf("USBCMD: %x\n" , _USBCMD);
 
+	_USBSTS = *(uint32_t *)(_OPERATIONALBASE + USBSTS_OFFSET);
+
+	c_printf("USBSTS %x\n" , _USBSTS);
 
 	int port;
 
@@ -125,6 +148,17 @@ void usb_ehci_init(struct _pci_dev * device)
 
 		c_printf("Port Number: %d Port Status: %x\n" , port , port_status);
 	}
+
+	//Interrupt Setup
+	
+	_USBINTR = _OPERATIONALBASE + USBINTR_OFFSET;
+
+	*(uint32_t *)_USBINTR = USB_INT_ENABLE | USB_ERROR_INT_ENABLE | PORT_CHANGE_INT_ENABLE;
+
+
+	c_printf("USBINTR %x\n" , *(uint32_t *)_USBINTR);
+
+	//Implement the actual Init function from the ECHI spec section 4.1
 
 	sleep(10000);
 }
