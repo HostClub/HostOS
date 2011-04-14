@@ -8,9 +8,13 @@ typedef struct page {
   uint32_t pres     : 1;
   uint32_t rw       : 1;
   uint32_t user     : 1;
-  uint32_t accsd    : 1;
+  uint32_t w-thr    : 1;
+  uint32_t cache    : 1;
+  uint32_t acces    : 1;
   uint32_t dirty    : 1;
-  uint32_t unused   : 7;
+  uint32_t unknown  : 1;
+  uint32_t global   : 1;
+  uint32_t avail    : 3;
   uint32_t frame    : 20;
 } page_t;
 
@@ -44,3 +48,5 @@ page_t *get_page(uint32_t addr, int create, page_dir_t *dir);
 
 
 //TODO:page fault handler
+
+#endif
