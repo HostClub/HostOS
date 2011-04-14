@@ -61,16 +61,42 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 				//The real shit
 				
 
-				//We can check here if it is a PCI bus or not
-				
+			
 				device = (struct _pci_dev *)_kalloc(sizeof(struct _pci_dev));
 
 				//check if malloc fails
+				if( device == NULL ){
+
+
+				}	
 
 				//Set bus
 				
 				device->bus = bus;
 
+				//We can check here if it is a PCI bus or not
+				if( class_code == 0x060400 ){
+
+					//Handle PCItoPCI bus
+					child = (struct _pci_bus *)_kalloc(sizeof(struct _pci_bus));
+
+					//Handle kalloc failing
+					if( child == NULL ){}
+
+					child->next = bus->children;
+					bus->children = child;
+					child->self = device;
+					child->parent = bus;
+
+					child->number = child->secondary = ++max;
+					child->primary = bus->secondary;
+					child->subordinate = 0xff;
+
+					//Recursively call _pci_list
+					max = _pci_list( child );		
+					child->subordinate = max;
+				}
+	
 				//Set vendor and device fields
 				uint16_t vendor_id = (vendor_device_id >> 16) & 0xffff;
 				uint16_t device_id = vendor_device_id & 0xffff;
@@ -78,8 +104,8 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 				device->vendor = vendor_id;
 				device->device = device_id;
 				
-				device->device_num = dev_num;
-				device->function_num = function_num;
+//				device->device_num = dev_num;
+//				device->function_num = function_num;
 
 				uint32_t class = _pci_config_read_word(bus->number , dev_num , function_num , 0x08);
 				device->class = class;
