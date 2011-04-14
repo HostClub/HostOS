@@ -15,16 +15,17 @@ struct _pci_dev
 	struct _pci_dev * sibling;	//Next device on bus
 	struct _pci_dev * next;		//Next device in chain
 
-	uint32_t device_function;
+	uint8_t device_num;
+	uint8_t function_num;
 	uint16_t vendor;
 	uint16_t device;
 	uint32_t class;
 
 	uint32_t header_type;
 	uint32_t io_queue;
-	uint64_t base_address[6];
-	uint64_t size[6];
-	uint64_t rom_address;
+	uint32_t base_address[6];
+	uint32_t size[6];
+	uint32_t rom_address;
 };
 
 struct _pci_bus

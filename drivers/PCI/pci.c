@@ -3,6 +3,7 @@
 #include "c_io.h"
 #include "kalloc.h"
 #include "usb_ehci.h"
+#include "ulib.h"
 
 #define CONFIG_DATA 0xCFC
 #define CONFIG_ADDRESS 0xCF8
@@ -33,7 +34,7 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 
 			uint32_t vendor_device_id = _pci_config_read_word(bus->number , dev_num , function_num , 0x00);
 
-			c_printf("vendor_device_id %x\n" , vendor_device_id);
+			//c_printf("vendor_device_id %x\n" , vendor_device_id);
 
 			if(vendor_device_id != -1)
 			{
@@ -109,10 +110,15 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 				//Throwing this in to test USB2 code, remove this and include
 				//of ehci when done
 				
-				if(class == USB_EHCI)
+				if((class & 0xFFFFFF00) == USB_EHCI)
 				{
 					usb_ehci_init(device);
 				}
+
+				/*c_puts("Sleeping...\n");
+
+				sleep( 1000 );
+				*/
 			}			
 		}
 	}

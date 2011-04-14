@@ -14,6 +14,8 @@
 
 #include "user.h"
 
+
+#include "pci.h"
 /*
 ** USER PROCESSES
 **
@@ -715,6 +717,22 @@ void init( void ) {
 		exit( X_FAILURE );
 	}
 
+	c_puts( "PCI testing started\n");
+
+	pid = fork();
+	if( pid < 0 ) {
+		c_puts( "init: can't fork() idle\n" );
+	} else if( pid == 0 ) {
+		exec( PRIO_MINIMUM, _pci_init );
+		c_puts( "init: can't exec idle\n" );
+		exit( X_FAILURE );
+	}
+
+	c_puts( "PCI testing ended\n");
+
+
+
+/*
 #ifdef SPAWN_A
 	pid = fork();
 	if( pid < 0 ) {
@@ -912,7 +930,7 @@ void init( void ) {
 		exit( X_FAILURE );
 	}
 #endif
-
+*/
 	writec( '!' );
 
 	/*
