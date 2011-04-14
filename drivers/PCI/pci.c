@@ -33,17 +33,17 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 
 			uint32_t vendor_device_id = _pci_config_read_word(bus->number , dev_num , function_num , 0x00);
 
-			c_printf("vendor_device_id %x\n" , vendor_device_id);
+			//c_printf("vendor_device_id %x\n" , vendor_device_id);
 
 			if(vendor_device_id != -1)
 			{
 				//This is just debugging info, you can probably remove most of this
 
-				c_puts("Found a function\n");
+			//	c_puts("Found a function\n");
 
 				
 
-				c_printf("device_num: %d function: %d value:%x\n" , dev_num , function_num , vendor_device_id);
+				c_printf("bus_num: %d device_num: %d function: %d value:%x\n" , bus->number, dev_num , function_num , vendor_device_id);
 
 				uint32_t status = _pci_config_read_word(bus->number , dev_num , function_num , 0x04);
 
@@ -55,7 +55,7 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 				uint8_t subclass = class_address >> 16 & 0xff;
 				uint8_t prog_if = class_address >> 8 & 0xff;
 
-				c_printf("class address %x class code %x subclass %x prog_if %x\n" ,class_address ,  class_code , subclass , prog_if);
+			//	c_printf("class address %x class code %x subclass %x prog_if %x\n" ,class_address ,  class_code , subclass , prog_if);
 				
 
 				//The real shit

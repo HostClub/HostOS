@@ -64,6 +64,12 @@ void user_v( void ); void user_w( void ); void user_x( void );
 void user_y( void ); void user_z( void );
 
 /*
+** Prototypes for custom user routines
+*/
+
+void user_pci_test( void );
+
+/*
 ** Users A, B, and C are identical, except for the character they
 ** print out via writec().  Each prints its ID, then loops 30
 ** times delaying and printing, before exiting.
@@ -657,6 +663,17 @@ void user_z( void ) {
 
 }
 
+/*
+** User test processes
+*/
+
+void user_pci_test( void ) {
+
+	c_puts( "User PCI_Test running\n" );
+	_pci_init();
+	c_puts( "User PCI_Test exiting\n" );
+
+}
 
 /*
 ** SYSTEM PROCESSES
@@ -912,6 +929,25 @@ void init( void ) {
 		exit( X_FAILURE );
 	}
 #endif
+
+	/*
+	** New Test Functions
+	*/
+
+#ifdef SPAWN_PCI_TEST
+	pid = fork();
+	if( pid < 0 ) {
+		c_puts( "init: can't fork() user PCI_TEST\n" );
+	} else if( pid == 0 ) {
+		exec( PRIO_STANDARD, user_pci_test );
+		c_puts( "init: can't exec user PCI_TEST\n" );
+		exit( X_FAILURE );
+	}
+#endif
+
+
+
+
 
 	writec( '!' );
 

@@ -59,7 +59,7 @@ struct _pci_bus
 //
 
 struct _pci_bus root;
-
+struct _pci_dev pci_devices;
 
 //
 //METHOD HEADERS
