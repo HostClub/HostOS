@@ -27,6 +27,8 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 
 	struct _pci_bus * child;
 
+	c_printf( "Current Bus #%d\n", bus->number );
+
 	for(dev_num = 0; dev_num < 0x20; dev_num++)
 	{
 		for(function_num = 0; function_num < 0x08; function_num++)
@@ -40,15 +42,15 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 			{
 				//This is just debugging info, you can probably remove most of this
 
-				c_puts("Found a function\n");
+			//	c_puts("Found a function\n");
 
 				
-
-				c_printf("device_num: %d function: %d value:%x\n" , dev_num , function_num , vendor_device_id);
-
+				if( bus->number != 0 ){
+				c_printf("bus_num: %d device_num: %d function: %d value:%x\n" , bus->number, dev_num , function_num , vendor_device_id);
+				}
 				uint32_t status = _pci_config_read_word(bus->number , dev_num , function_num , 0x04);
 
-				c_printf("status %x\n" , status);
+			//	c_printf("status %x\n" , status);
 
 				uint32_t class_address = _pci_config_read_word(bus->number , dev_num , function_num , 0x08);
 
@@ -56,22 +58,58 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 				uint8_t subclass = class_address >> 16 & 0xff;
 				uint8_t prog_if = class_address >> 8 & 0xff;
 
-				c_printf("class address %x class code %x subclass %x prog_if %x\n" ,class_address ,  class_code , subclass , prog_if);
-				
+			//	c_printf("class address %x class code %x subclass %x prog_if %x\n" ,class_address ,  class_code , subclass , prog_if);
+
+				uint32_t register_0c = _pci_config_read_word(bus->number , dev_num , function_num , 0x0c);
+
+				uint8_t bist = register_0c >> 24 & 0xff;
+				uint8_t hdr_type = register_0c >> 16 & 0xff;
+				uint8_t latency_timer = register_0c >> 8 & 0xff;
+
+			
 
 				//The real shit
 				
 
-				//We can check here if it is a PCI bus or not
-				
+			
 				device = (struct _pci_dev *)_kalloc(sizeof(struct _pci_dev));
 
 				//check if malloc fails
+				if( device == NULL ){
+
+
+				}	
 
 				//Set bus
 				
 				device->bus = bus;
 
+				//We can check here if it is a PCI bus or not
+				if( hdr_type == 0x01 ){
+
+
+					c_printf( "Found a new PCI-to-PCI bus!\n" );
+
+					//Handle PCItoPCI bus
+					child = (struct _pci_bus *)_kalloc(sizeof(struct _pci_bus));
+
+					//Handle kalloc failing
+					if( child == NULL ){}
+
+					child->next = bus->children;
+					bus->children = child;
+					child->self = device;
+					child->parent = bus;
+
+					child->number = child->secondary = ++max;
+					child->primary = bus->secondary;
+					child->subordinate = 0xff;
+
+					//Recursively call _pci_list
+					max = _pci_list( child );		
+					child->subordinate = max;
+				}
+	
 				//Set vendor and device fields
 				uint16_t vendor_id = (vendor_device_id >> 16) & 0xffff;
 				uint16_t device_id = vendor_device_id & 0xffff;
@@ -79,8 +117,8 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 				device->vendor = vendor_id;
 				device->device = device_id;
 				
-				device->device_num = dev_num;
-				device->function_num = function_num;
+//				device->device_num = dev_num;
+//				device->function_num = function_num;
 
 				uint32_t class = _pci_config_read_word(bus->number , dev_num , function_num , 0x08);
 				device->class = class;
