@@ -21,6 +21,7 @@
 #include "syscall.h"
 #include "sio.h"
 #include "scheduler.h"
+#include "bsp.h"
 
 // need init() address
 #include "user.h"
