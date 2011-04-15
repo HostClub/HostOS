@@ -769,9 +769,14 @@ MPFloatPointer_t *findMPFPS( void );
 void strncpy( char *, char *, int );
 
 
-#define MPFPS_LOC_BIOSROM_LOW  0x0F0000
-#define MPFPS_LOC_BIOSROM_HIGH 0x100000
-#define EBDA_BASE              0x9C000
+#define BIOSROM_LOW      0x0E0000
+#define BIOSROM_HIGH     0x100000
+#define EBDA_BASE        0x09FC00
+#define EBDA_POINTER     0x00040E
+#define TOPOFMEM_POINTER 0x000413
+#define DEFAULT_TOPOFMEM 0x0A0000
+#define MP_SIG           0x5f504d5f    /* _MP_ */
+#define MPT_SIG          0x504D4350    /* _MP_ */
 
 void strncpy(char *src, char *dst, int len) {
 	dst[len] = 0;
@@ -780,30 +785,82 @@ void strncpy(char *src, char *dst, int len) {
 	}
 }
 
+
+
 MPFloatPointer_t *findMPFPS() {
 	//check to see is the extended BIOS data area is defined
-	void *ebdaBase = (void *)EBDA_BASE;
+	uint32_t *ebdaBase = (uint32_t *)EBDA_POINTER;
+	c_printf("Checking EBDA base @ 0x%x: 0x%x\n", EBDA_POINTER, *ebdaBase);
 	if (ebdaBase) {
 		//search for the floating pointer structure in the extended BIOS data area
-		char *loc = (char *)ebdaBase;
-		while ((uint32_t)loc < 0xA0000) {
-			if (*loc == '_' && *(loc + 1) == 'M' && *(loc + 2) == 'P' && *(loc + 3) == '_') {
+		*ebdaBase = *ebdaBase << 4;
+		c_printf("EBDA defined to be: 0x%x\n", *ebdaBase);
+		char *loc = (char *)*ebdaBase;
+		c_printf("Checking the EBDA between 0x%x and 0x%x\n", loc, *ebdaBase + 0x0400 - 4);
+		while ((uint32_t)loc < *ebdaBase + 0x0400 - 4) {
+			//c_putchar(*loc);
+			if (*loc == MP_SIG) {
 				return (MPFloatPointer_t *)loc;
 			}
-			loc += 16;
+			loc += 1;
 		}
 	} else {
 		//search for the structure in the last 1KB of system base memory
+		c_printf("No EBDA defined\n");
 
 	}
 
+
+	c_printf("Checking the BIOS ROM (0x%x - 0x%x)\n", BIOSROM_LOW, BIOSROM_HIGH);
 	//search for the structure in BIOS ROM
-	char *loc = (char *)MPFPS_LOC_BIOSROM_LOW;
-	while ((uint32_t)loc < MPFPS_LOC_BIOSROM_HIGH - 4) {
-		if (*loc == '_' && *(loc + 1) == 'M' && *(loc + 2) == 'P' && *(loc + 3) == '_') {
+	char *loc = (char *)BIOSROM_LOW;
+	while ((uint32_t)loc < BIOSROM_HIGH - 4) {
+		if (*loc == MP_SIG) {
 			return (MPFloatPointer_t *)loc;
 		}
 		loc += 16;
+	}
+
+	uint32_t *topMem = (uint32_t *)TOPOFMEM_POINTER;
+	c_printf("Checking top of memory pointer @ 0x%x: 0x%x\n", TOPOFMEM_POINTER, *topMem);
+	if (topMem) {
+		//search for the floating pointer structure in the extended BIOS data area
+		//(*topMem)++;
+		(*topMem) *= 1024;
+		c_printf("Top of memory defined to be: 0x%x\n", *topMem);
+		char *loc = (char *)*topMem;
+		c_printf("Checking the top of memory between 0x%x and 0x%x\n", loc, *topMem + 0x0400 - 4);
+		while ((uint32_t)loc < *topMem + 0x0400 - 4) {
+			//c_putchar(*loc);
+			if (*loc == MP_SIG) {
+				return (MPFloatPointer_t *)loc;
+			}
+			loc += 1;
+		}
+	}
+
+	c_printf("Checking the default top of memory (0x%x - 0x%x)\n", DEFAULT_TOPOFMEM, DEFAULT_TOPOFMEM - 1024);
+	//search for the structure in BIOS ROM
+	loc = (char *)DEFAULT_TOPOFMEM - 1024;
+	while ((uint32_t)loc < DEFAULT_TOPOFMEM - 4) {
+		if (*loc == MP_SIG) {
+			return (MPFloatPointer_t *)loc;
+		}
+		loc += 16;
+	}
+
+
+	//search for the structure in the top of physical memory
+	loc = (char *)0x00000000;
+	while ((uint32_t)loc < 0xFFFFFFFF - 4) {
+		if (*loc == MP_SIG || *loc == MPT_SIG) {
+			return (MPFloatPointer_t *)loc;
+		}
+		loc += 16;
+
+		if (((uint32_t)loc & 0xFFFF) == 0) {
+			c_printf("%d of 65535 complete\n", (uint32_t)loc/0xFFFF);
+		}
 	}
 
 	return NULL;
@@ -880,11 +937,11 @@ void checkCPUs() {
 	c_printf("Features (ECX): 0x%x\n", *((uint32_t *)data + 8));
 	c_printf("Features (EDX): 0x%x\n", *((uint32_t *)data + 12));
 
-	c_printf("Stepping ID: %d  ", steppingID);
-	c_printf("Model Number: %d  ", modelNumber);
-	c_printf("Family Code: %d  ", familyCode);
-	c_printf("Type: %d  ", type);
-	c_printf("Extended Model: %d  ", extendedModel);
+	c_printf("Stepping ID:     %d\n", steppingID);
+	c_printf("Model Number:    %d\n", modelNumber);
+	c_printf("Family Code:     %d\n", familyCode);
+	c_printf("Type:            %d\n", type);
+	c_printf("Extended Model:  %d\n", extendedModel);
 	c_printf("Extended Family: %d\n", extendedFamily);
 
 	id = *((uint32_t *)(data + 4));
@@ -932,22 +989,38 @@ void checkCPUs() {
 	char temp[13];
 
 	MPFloatPointer_t *mpStruct = findMPFPS();
-	/*c_printf("MP Floating Pointer: 0x%x\n", mpStruct);
-	strncpy(mpStruct->signature, temp, 4);
-	c_printf("Signature: %s\n", temp);
-	c_printf("Table Address: 0x%x\n", mpStruct->table);
-	c_printf("Table Length: 0x%x\n", mpStruct->tableLength * 16);
-	c_printf("Revision: 0x%x\n", mpStruct->specRev);
-	c_printf("Checksum: 0x%x\n", mpStruct->checksum);
-	c_printf("Features: 0x%x 0x%x 0x%x 0x%x 0x%x\n", mpStruct->features[0], mpStruct->features[1], mpStruct->features[2], mpStruct->features[3], mpStruct->features[4]);*/
+	if (mpStruct == NULL) {
+		__panic("No Multiprocessor support!");
+	}
 
+	c_printf("MP Floating Pointer\n");
+	strncpy(mpStruct->signature, temp, 4);
+	c_printf("  Signature:     %s\n", temp);
+	c_printf("  Table Address: 0x%x\n", mpStruct->table);
+	c_printf("  Table Length:  0x%x\n", mpStruct->tableLength * 16);
+	c_printf("  Revision:      0x%x\n", mpStruct->specRev);
+	c_printf("  Checksum:      0x%x\n", mpStruct->checksum);
+	c_printf("  Features:      0x%x 0x%x 0x%x 0x%x 0x%x\n", mpStruct->features[0], mpStruct->features[1], mpStruct->features[2], mpStruct->features[3], mpStruct->features[4]);
+
+	c_printf("MP Configuration Table\n");
 	MPConfigTable_t *config = mpStruct->table;
+
 	strncpy(config->signature, temp, 4);
-	c_printf("Signature: %s\n", temp);
+	c_printf("  Signature:               %s\n", temp);
 	strncpy(config->oemID, temp, 8);
-	c_printf("OEM ID: %s\n", temp);
+	c_printf("  OEM ID:                  %s\n", temp);
 	strncpy(config->productID, temp, 12);
-	c_printf("Product ID: %s\n", temp);
+	c_printf("  Product ID:              %s\n", temp);
+	c_printf("  Revision:                0x%x\n", config->specRev);
+	c_printf("  Base Table Length:       0x%x\n", config->baseTableLength);
+	c_printf("  Checksum:                0x%x\n", config->checksum);
+	c_printf("  OEM Table Size:          0x%x\n", config->baseTableLength);
+	c_printf("  Entry Count:             %d\n", config->entryCount);
+	c_printf("  Local APIC:              0x%x\n", config->localAPIC);
+	c_printf("  Extended Table Length:   0x%x\n", config->extendedTableLength);
+	c_printf("  Extended Table Checksum: 0x%x\n", config->extendedTableChecksum);
+
+	__panic("Hey, look!");
 }
 
 

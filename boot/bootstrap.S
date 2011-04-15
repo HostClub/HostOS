@@ -215,6 +215,13 @@ done_loading:
 movw	$msg_go, %si	/* last status message */
 call	dispMsg
 
+
+/* Change the video mode */
+movw   $0x1112,%ax
+movw   $0x0000,%bx
+int    $0x10
+
+
 jmp	switch		/* move to the next phase */
 
 /*
