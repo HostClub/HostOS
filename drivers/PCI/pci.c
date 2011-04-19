@@ -44,12 +44,10 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 			//	c_puts("Found a function\n");
 
 				
-				if( bus->number != 0 ){
 				c_printf("bus_num: %d device_num: %d function: %d value:%x\n" , bus->number, dev_num , function_num , vendor_device_id);
-				}
 				uint32_t status = _pci_config_read_word(bus->number , dev_num , function_num , 0x04);
 
-			//	c_printf("status %x\n" , status);
+				c_printf("status %x\n" , status);
 
 				uint32_t class_address = _pci_config_read_word(bus->number , dev_num , function_num , 0x08);
 
@@ -141,8 +139,9 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 				device->base_address[4] = _pci_config_read_word(bus->number , dev_num , function_num , 0x20);
 				
 				device->base_address[5] = _pci_config_read_word(bus->number , dev_num , function_num , 0x24);
-				//I'm not really sure what the size array or rom address is for
 				
+				//I'm not really sure what the size array or rom address is for
+				//The size array contains the size in memory of the spaces pointed at by the base address registers
 				
 				//Throwing this in to test USB2 code, remove this and include
 				//of ehci when done
