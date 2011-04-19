@@ -87,7 +87,7 @@ void _isr_clock( int vector, int code ) {
 	** and print the contents of the SIO buffers
 	*/
 
-	if( (_system_time & CLK_SEC_20) == 0 ) {
+	/*if( (_system_time & CLK_SEC_20) == 0 ) {
 		c_printf( "Queue contents @%08x\n", _system_time );
 		_q_dump( "ready[0]", &_ready[0] );
 		_q_dump( "ready[1]", &_ready[1] );
@@ -98,7 +98,7 @@ void _isr_clock( int vector, int code ) {
 		_q_dump( "waiting ", &_waiting );
 		_q_dump( "zombie  ", &_zombie );
 		_sio_dump();
-	}
+	}*/
 
 	// select a new current process
 

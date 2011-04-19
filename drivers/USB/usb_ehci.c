@@ -3,9 +3,19 @@
 #include "ulib.h"
 #include "support.h"
 
+//PCI Stuff
 #define BASE_MASK 0xFFFFFF00
 uint32_t _BASE;
 
+#define USBLEGSUP_OFFSET 0x00
+uint32_t _USBLEGSUP;
+
+#define HC_OS_OWNED_ENABLE (1<<24)
+
+#define USBLEGCTLSTS_OFFSET 0x04
+uint32_t _USBLEGCTLSTS;
+
+//Memory Stuff
 #define CAPLENGTH_OFFSET 0x00
 uint8_t * _CAPLENGTH;
 
@@ -178,15 +188,12 @@ void usb_ehci_init(struct _pci_dev * device)
 
 	//Not sure if I should store the data or the address in the variables
 	_CAPLENGTH = (_BASE + CAPLENGTH_OFFSET);
-
 	c_printf("CAPLENGTH %x\n" , *_CAPLENGTH);
 
 	_HSCPARAMS = (_BASE + HSCPARAMS_OFFSET);
-
 	c_printf("HSCPARAMS %x\n" , *_HSCPARAMS);
 
 	_HCCPARAMS = (_BASE + HCCPARAMS_OFFSET);
-
 	c_printf("HCCPARAMS %x\n" , *_HCCPARAMS);
 
 	_N_PORTS = ( *_HSCPARAMS & N_PORTS_MASK ) >> N_PORTS_OFFSET;
@@ -198,28 +205,49 @@ void usb_ehci_init(struct _pci_dev * device)
 	_USBCMD = (_OPERATIONALBASE + USBCMD_OFFSET);
 
 	c_printf("USBCMD: %x %x\n" , _USBCMD , *_USBCMD);
-	
-	/**_USBCMD |= HCRESET_ENABLE;
-
-	sleep(50);
-	*/
-
+		
 	c_printf("%x %x\n" , USBSTS_OFFSET , _OPERATIONALBASE + USBSTS_OFFSET);
 
 	_USBSTS = (_OPERATIONALBASE + USBSTS_OFFSET);
 
 	c_printf("USBSTS %x %x\n" , _USBSTS ,  *_USBSTS);
 
-	int port;
 
-	for(port = 0; port < _N_PORTS; port++)
+	//Implementation Stuff
+
+	uint32_t sbrn = _pci_config_read_word(device->bus->number , device->device_num , device->function_num , 0x60);
+
+	c_printf("sbrn %x\n" , sbrn);
+
+	uint32_t eecp = (*_HCCPARAMS & EECP_MASK) >> EECP_OFFSET;
+
+	c_printf("EECP %x\n" , eecp);
+
+	if (eecp > 0)
 	{
-		uint32_t * port_address = _OPERATIONALBASE + PORTSC_OFFSET + 4 * port;
+		_USBLEGSUP = _pci_config_read_word(device->bus->number , device->device_num , device->function_num , eecp);
 
-		uint32_t port_status = * (port_address);
+		_USBLEGCTLSTS = _pci_config_read_word(device->bus->number , device->device_num , device->function_num , eecp + USBLEGCTLSTS_OFFSET);
 
-		c_printf("Port Number: %d Port Status: %x\n" , port , port_status);
+		c_printf("USBLEGSUP %x\n" , _USBLEGSUP);
+		c_printf("USBLEGCTLSTS %x\n" , _USBLEGCTLSTS);
+		
+		sleep(100);
+
+		_pci_config_write_word(device->bus->number , device->device_num , device->function_num , eecp , _USBLEGSUP | HC_OS_OWNED_ENABLE);
+
+		sleep(100);
+		c_puts("In between write and read\n");
+		sleep(100);
+
+		_USBLEGSUP = _pci_config_read_word(device->bus->number , device->device_num , device->function_num , eecp);
+
+		sleep(100);
+
+		c_printf("USBLEGSUP %x\n" , _USBLEGSUP);
+		
 	}
+
 
 	//Interrupt Setup
 		
@@ -235,7 +263,7 @@ void usb_ehci_init(struct _pci_dev * device)
 
 	//Implement the actual Init function from the ECHI spec section 4.1
 
-	sleep(10000000);
+	sleep(10000000000);
 }
 
 void _isr_usb_int(int vector , int code)
