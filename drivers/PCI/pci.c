@@ -114,6 +114,9 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 				
 				device->vendor = vendor_id;
 				device->device = device_id;
+
+				device->device_num = dev_num;
+				device->function_num = function_num;
 				
 //				device->device_num = dev_num;
 //				device->function_num = function_num;
@@ -143,6 +146,7 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 				
 				//I'm not really sure what the size array or rom address is for
 				//The size array contains the size in memory of the spaces pointed at by the base address registers
+						
 				
 				//Throwing this in to test USB2 code, remove this and include
 				//of ehci when done
@@ -182,4 +186,24 @@ uint32_t _pci_config_read_word(uint8_t bus , uint8_t device, uint8_t function , 
 
 	ret = (uint32_t)(__inl(CONFIG_DATA));
 	return (ret);
+}
+
+void _pci_config_write_word(uint8_t bus , uint8_t device, uint8_t function , uint8_t offset, uint32_t data)
+{
+	uint32_t address;
+	uint32_t lbus = (uint32_t)bus;
+	uint32_t ldevice = (uint32_t)device;
+	uint32_t lfunc = (uint32_t)function;
+	uint32_t loffset = (uint32_t)offset;
+	uint32_t ret = 0;
+
+
+	//TODO: Remove magic numbers
+	address = (uint32_t)((lbus << 16) | (ldevice << 11) |
+			(lfunc << 8) | (loffset & 0xfc) | ((uint32_t)0x80000000));
+	/* write out the address */
+	__outl (CONFIG_ADDRESS, address);
+	/* write out the data */
+
+	__outl(CONFIG_DATA, data);
 }
