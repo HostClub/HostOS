@@ -76,4 +76,8 @@ uint32_t _pci_config_read_word(uint8_t bus , uint8_t slot , uint8_t function , u
 
 void _pci_config_write_word(uint8_t bus , uint8_t slot , uint8_t function , uint8_t offset, uint32_t data );
 
+//Valid values for byte offset are 0,8,16,24 - Will not do error checking
+void _pci_config_write_byte(uint8_t bus , uint8_t slot , uint8_t function , uint8_t register_offset, uint8_t byte_offset , uint8_t data );
+
+
 #endif

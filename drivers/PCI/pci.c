@@ -207,3 +207,23 @@ void _pci_config_write_word(uint8_t bus , uint8_t device, uint8_t function , uin
 
 	__outl(CONFIG_DATA, data);
 }
+
+void _pci_config_write_byte(uint8_t bus , uint8_t device, uint8_t function , uint8_t register_offset, uint8_t offset, uint8_t data)
+{
+	uint32_t address;
+	uint32_t lbus = (uint32_t)bus;
+	uint32_t ldevice = (uint32_t)device;
+	uint32_t lfunc = (uint32_t)function;
+	uint32_t loffset = (uint32_t)offset;
+	uint32_t ret = 0;
+
+
+	//TODO: Remove magic numbers
+	address = (uint32_t)((lbus << 16) | (ldevice << 11) |
+			(lfunc << 8) | (loffset & 0xfc) | ((uint32_t)0x80000000));
+	/* write out the address */
+	__outl (CONFIG_ADDRESS, address);
+	/* write out the data */
+
+	__outb(CONFIG_DATA + offset, data);
+}
