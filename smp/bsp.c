@@ -1,6 +1,8 @@
 #include "headers.h"
 #include "bsp.h"
 
+LAPIC_t *local_apic;
+
 void inline write_eflags(uint32_t a) {
 	asm("push  %%eax;\
 	     popfl;"
@@ -46,6 +48,14 @@ void inline unscramble_cpuid(uint32_t *data) {
 	data[2] ^= data[3];
 }
 
+uint8_t inline get_lapic_version(LAPIC_t* lapic) {
+	return (lapic->versionLVT & 0xFF);
+}
+
+uint8_t inline get_lapic_maxLVT(LAPIC_t* lapic) {
+	return ((lapic->versionLVT >> 16) & 0xFF);
+}
+
 void strncpy(char *src, char *dst, int len) {
 	dst[len] = 0;
 	while (len--) {
@@ -73,7 +83,6 @@ MPFloatPointer_t *findMPFPS() {
 	} else {
 		//search for the structure in the last 1KB of system base memory
 		c_printf("No EBDA defined\n");
-
 	}
 
 
@@ -270,9 +279,61 @@ void checkCPUs() {
 		c_printf("  Local APIC:              0x%x\n", config->localAPIC);
 		c_printf("  Extended Table Length:   0x%x\n", config->extendedTableLength);
 		c_printf("  Extended Table Checksum: 0x%x\n", config->extendedTableChecksum);
+
+		local_apic = (LAPIC_t *)DEFAULT_LAPIC_ADDRESS;
 	} else {
 		c_printf("No MP Floating Pointer Structure Found - Falling back to defaults\n");
+		local_apic = (LAPIC_t *)DEFAULT_LAPIC_ADDRESS;
+	}
 
+	c_printf("Local APIC\n");
+	c_printf("  ID:      %d\n", local_apic->id);
+	c_printf("  Version: %d\n", get_lapic_version(local_apic));
+	c_printf("  Max LVT: %d\n", get_lapic_maxLVT(local_apic));
 
+	c_printf("Press any key to startup second processor...");
+	c_getchar();
+
+	IPICommand_t ipi;
+	ipi.upper.destination = 1;
+	ipi.lower.shorthand = 0;
+	ipi.lower.triggerMode = 0;
+	ipi.lower.level = 0;
+	ipi.lower.destMode = 0;
+	ipi.lower.deliveryMode = 5;
+	ipi.lower.vector = 0;
+
+	send_IPI(ipi);
+
+	uint32_t a = 0;
+	while (++a);
+
+	ipi.upper.destination = 1;
+	ipi.lower.shorthand = 0;
+	ipi.lower.triggerMode = 0;
+	ipi.lower.level = 1;
+	ipi.lower.destMode = 0;
+	ipi.lower.deliveryMode = 6;
+	ipi.lower.vector = 0;
+
+	send_IPI(ipi);
+	
+	while (++a);
+
+	c_printf("Sent the STARTUP IPI\nPress any key to continue...");
+	c_getchar();
+
+	__panic("Hey, look!");
+}
+
+void inline send_IPI(IPICommand_t command) {
+	struct IPICommandLower *low = (struct IPICommandLower *)&local_apic->icr_lo;
+
+	local_apic->icr_hi = *((uint32_t *)&(command.upper));
+	local_apic->icr_lo = *((uint32_t *)&(command.lower));
+
+	while (low->deliveryStatus) {
+		c_printf("Waiting for send");
 	}
 }
+
