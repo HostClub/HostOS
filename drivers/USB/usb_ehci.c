@@ -88,7 +88,7 @@ uint32_t * _USBSTS;
 
 #define USB_INT (1 << 0)
 #define PORT_CHANGE_DETECT (1 << 2)
-
+#define FRAME_LIST_ROLLOVER_ENABLE (1 << 3)
 #define HCHALTED_ENABLE (1 << 12)
 
 #define USBINTR_OFFSET 8
@@ -162,12 +162,12 @@ uint32_t * _CONFIGFLAG;
 
 //Line Status Defines
 #define LINE_STATUS_OFFSET 10
-#define LINE_STATUS_MAST (0x03 << LINE_STATUS_OFFSET)
+#define LINE_STATUS_MASK (0x03 << LINE_STATUS_OFFSET)
 
 #define SEO_STATE 	0x00
-#define J_STATE	 	0x01
 //Low Speed Device
-#define K_STATE 	0x02
+#define K_STATE	 	0x01
+#define J_STATE 	0x02
 #define UNDEFINED_STATE 0x03
 
 #define PORT_RESET_ENABLE 		(1 << 8)
@@ -328,48 +328,97 @@ void usb_ehci_init(struct _pci_dev * device)
 		c_printf("USBLEGCTLSTS %x\n" , _USBLEGCTLSTS);
 
 		//Spin while BIOS claims they are owning EHCI
+		//Should replace this with interrupts 
 		while( _USBLEGSUP & HC_BIOS_OWNED_ENABLE )
 		{
 			_USBLEGSUP = _pci_config_read_word(device->bus->number , device->device_num , device->function_num , eecp);	
-		
-			//sleep(20);
-			
-			//_pci_config_write_word(device->bus->number , device->device_num , device->function_num , eecp , _USBLEGSUP | HC_OS_OWNED_ENABLE);
-			
 		}
 
 		c_printf("USBLEGSUP %x\n" , _USBLEGSUP);
 		
 	}
 
+	//Last real step in ownership process, now we just have to deal
+	//with what happens after transferring control
 	*_CONFIGFLAG |= CONFIGFLAG_ENABLE;
 
+	//It seems the host controller likes to shut off after transferring control
 	*_USBCMD |= RUN_ENABLE;
 
-	c_printf("USBINTR %x\n" , *_USBINTR);
-	c_printf("USBSTS %x\n" , *_USBSTS);
-	c_printf("USBCMD %x\n" , *_USBCMD);
-		
-	_USBLEGSUP = _pci_config_read_word(device->bus->number , device->device_num , device->function_num , eecp);	
-	c_printf("USBLEGSUP %x\n" , _USBLEGSUP);
+	//Sleep until the host controller is running again
+	sleep(20);
 
+	c_puts("Host controller reenabled\n");
+
+	int port;
+
+	for(port = 0; port < _N_PORTS; port++)
+	{
+		uint32_t * port_address = _OPERATIONALBASE + PORTSC_OFFSET + (4 * port);
+
+		uint32_t port_status = *port_address;
+
+		c_printf("Port Number: %d Port Status: %x\n" , port , port_status);
+		
+		//Lets check if the port is not in k_state
+
+		c_printf("Line status %x %x\n" , (port_status & LINE_STATUS_MASK) , (port_status & LINE_STATUS_MASK) >> LINE_STATUS_OFFSET);
+		//If the port has a connection and the Line status is a high speed device
+		
+		if(port_status & CONNECT_STATUS)
+		{
+			if(((port_status & LINE_STATUS_MASK) >> LINE_STATUS_OFFSET) != K_STATE)
+			{
+				//Port is a high speed device, wants a reset
+
+				*port_address |= PORT_RESET_ENABLE;
+				*port_address &= ~PORT_ENABLE;
+				
+				//Wait for the port to reset
+				sleep(10);
+
+				*port_address &= ~PORT_RESET_ENABLE;
+
+				sleep(10);
+
+				c_printf("Curr port status %x\n" , *port_address);
+			}
+		
+			//Should probably deal with it being a low speed device here
+		}
+	}
 
 	//Interrupt Setup
 
 	_USBINTR = _OPERATIONALBASE + USBINTR_OFFSET;
 
 	*_USBINTR = USB_INT_ENABLE | PORT_CHANGE_INT_ENABLE;
-
+	
 	__install_isr(USB_INT_VEC , _isr_usb_int);
-
+	
 	c_printf("USBINTR %x\n" , *_USBINTR);
-
+	c_printf("USBINTR %x\n" , *_USBINTR);
+	c_printf("USBSTS %x\n" , *_USBSTS);
+	c_printf("USBCMD %x\n" , *_USBCMD);
+	
 	while(1)
 	{
 
-		sleep(1000);
+		sleep(500);
 
-		int port;
+		c_printf("USBSTS %x\n" , *_USBSTS);
+		
+		if(*_USBSTS & PORT_CHANGE_DETECT)
+		{
+			//*port_address |= CONNECT_STATUS_CHANGE_ENABLE;
+
+			*_USBSTS |= PORT_CHANGE_DETECT;
+			
+			//*_USBSTS &= ~PORT_CHANGE_DETECT;
+		}
+
+
+		//port is declared above
 		uint32_t * port_address;
 
 		for(port = 0; port < _N_PORTS; port++)
@@ -384,16 +433,15 @@ void usb_ehci_init(struct _pci_dev * device)
 			if(port_status & CONNECT_STATUS_CHANGE_ENABLE)
 			{
 				c_printf("SOMETHING CHANGED ON PORT %d\n" , port);
-				break;
 			}	
+
+			
 		}
 
+		
 		c_printf("USBINTR %x\n" , *_USBINTR);
 		c_printf("USBSTS %x\n" , *_USBSTS);
 		c_printf("USBCMD %x\n" , *_USBCMD);
-		
-		_USBLEGSUP = _pci_config_read_word(device->bus->number , device->device_num , device->function_num , eecp);	
-		c_printf("USBLEGSUP %x\n" , _USBLEGSUP);
 	}
 	//Implement the actual Init function from the ECHI spec section 4.1
 
@@ -409,7 +457,7 @@ void _isr_usb_int(int vector , int code)
 		int port;
 		uint32_t * port_address;
 
-		for(port = 0; port < _N_PORTS; port++)
+		/*for(port = 0; port < _N_PORTS; port++)
 		{
 			port_address = _OPERATIONALBASE + PORTSC_OFFSET + (4 * port);
 
@@ -423,7 +471,7 @@ void _isr_usb_int(int vector , int code)
 				c_printf("SOMETHING CHANGED ON PORT %d\n" , port);
 				break;
 			}	
-		}
+		}*/
 
 
 
@@ -432,22 +480,58 @@ void _isr_usb_int(int vector , int code)
 
 		if(*_USBSTS & PORT_CHANGE_DETECT)
 		{
-			*port_address |= CONNECT_STATUS_CHANGE_ENABLE;
 
-			*_USBSTS = *_USBSTS | PORT_CHANGE_DETECT;
+			for( port = 0; port < _N_PORTS; port++)
+			{
+				port_address = _OPERATIONALBASE + PORTSC_OFFSET + (4 * port);
 
-			c_printf("USBSTS %x\n" , *_USBSTS);
+				uint32_t port_status = *port_address;
 
+				if(port_status & CONNECT_STATUS_CHANGE_ENABLE)
+				{
+					c_printf("Something changed on port %d %x\n" , port , *port_address);
+					*port_address |= CONNECT_STATUS_CHANGE_ENABLE;
+				}	
+
+				c_printf("Current port status %d %x\n" , port , *port_address);
+
+			}
+
+			*_USBSTS |= PORT_CHANGE_DETECT;
+			
+			//*_USBSTS &= ~PORT_CHANGE_DETECT;
 		}
 		else if(*_USBSTS & USB_INT_ENABLE)
 		{
-			*_USBSTS &= ~(uint32_t)USB_INT; 
+			*_USBSTS &= ~USB_INT; 
+		}
+		else if(*_USBSTS & FRAME_LIST_ROLLOVER_ENABLE)
+		{
+			*_USBSTS |= FRAME_LIST_ROLLOVER_ENABLE;
 		}
 
+		/*for(port = 0; port < _N_PORTS; port++)
+		{
+			port_address = _OPERATIONALBASE + PORTSC_OFFSET + (4 * port);
+
+			uint32_t port_status = *port_address;
+
+
+			c_printf("Port Number: %d Port Status: %x\n" , port , port_status);
+
+			if(port_status & CONNECT_STATUS_CHANGE_ENABLE)
+			{
+				c_printf("SOMETHING CHANGED ON PORT %d\n" , port);
+				break;
+			}	
+		}*/
+
+		
 		c_printf("USBSTS %x\n" , *_USBSTS);
 	}
 
 	__outb( PIC_MASTER_CMD_PORT, PIC_EOI );
+	__outb( PIC_SLAVE_CMD_PORT, PIC_EOI );
 
 }
 
