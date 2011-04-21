@@ -214,7 +214,7 @@ void _pci_config_write_byte(uint8_t bus , uint8_t device, uint8_t function , uin
 	uint32_t lbus = (uint32_t)bus;
 	uint32_t ldevice = (uint32_t)device;
 	uint32_t lfunc = (uint32_t)function;
-	uint32_t loffset = (uint32_t)offset;
+	uint32_t loffset = (uint32_t)register_offset;
 	uint32_t ret = 0;
 
 
@@ -224,6 +224,8 @@ void _pci_config_write_byte(uint8_t bus , uint8_t device, uint8_t function , uin
 	/* write out the address */
 	__outl (CONFIG_ADDRESS, address);
 	/* write out the data */
+
+	c_printf("%x %x\n" , CONFIG_DATA , CONFIG_DATA + offset);
 
 	__outb(CONFIG_DATA + offset, data);
 }
