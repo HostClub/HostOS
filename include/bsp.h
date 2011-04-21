@@ -120,30 +120,74 @@ typedef struct __attribute__((packed)) _LAPIC {
 	/* reserved */         PAD4;
 } LAPIC_t;
 
+
+#define IPI_DELMODE_FIXED   0
+#define IPI_DELMODE_LOWPRIO 1
+#define IPI_DELMODE_SMI     2
+#define IPI_DELMODE_NMI     4
+#define IPI_DELMODE_INIT    5
+#define IPI_DELMODE_STARTUP 6
+
+#define IPI_DESTMODE_PHYSICAL 0
+#define IPI_DESTMODE_LOGICAL  1
+
+#define IPI_LEVEL_DEASSERT 0
+#define IPI_LEVEL_ASSERT   1
+
+#define IPI_DELSTAT_IDLE    0
+#define IPI_DELSTAT_PENDING 1
+
+#define IPI_TRIGGER_EDGE  0
+#define IPI_TRIGGER_LEVEL 1
+
+#define IPI_SHORTHAND_NONE  0
+#define IPI_SHORTHAND_SELF  1
+#define IPI_SHORTHAND_ALLIS 2
+#define IPI_SHORTHAND_ALLXS 3
+
 typedef struct _IPICommand {
-	struct IPICommandUpper {
-		uint8_t destination : 8;
+	uint32_t lower;
+	uint32_t upper;
+} IPICommand_t;
+
+void set_ipi_destination(IPICommand_t *ipi, uint8_t value);
+
+void set_ipi_shorthand(IPICommand_t *ipi, uint8_t value);
+
+void set_ipi_triggermode(IPICommand_t *ipi, uint8_t value);
+
+void set_ipi_level(IPICommand_t *ipi, uint8_t value);
+
+void set_ipi_destinationmode(IPICommand_t *ipi, uint8_t value);
+
+void set_ipi_deliverymode(IPICommand_t *ipi, uint8_t value);
+
+void set_ipi_vector(IPICommand_t *ipi, uint8_t value);
+
+/*typedef struct _IPICommand {
+	struct __attribute__((PACKED)) IPICommandUpper {
 		uint32_t : 24;
+		uint8_t destination : 8;
 	} upper;
 
-	struct IPICommandLower {
-		uint32_t : 12;
-		uint8_t shorthand : 2;
-		uint8_t : 2;
-		uint8_t triggerMode : 1;
-		uint8_t level : 1;
+	struct __attribute__((PACKED)) IPICommandLower {
+		uint8_t vector : 8;
+		uint8_t deliveryMode : 3;
+		uint8_t destMode : 1;
 		uint8_t deliveryStatus : 1;
 		uint8_t : 1;
-		uint8_t destMode : 1;
-		uint8_t deliveryMode : 3;
-		uint8_t vector : 8;
+		uint8_t level : 1;
+		uint8_t triggerMode : 1;
+		uint8_t : 2;
+		uint8_t shorthand : 2;
+		uint32_t : 12;
 	} lower;
-} IPICommand_t;
+} IPICommand_t;*/
 
 uint8_t inline get_lapic_version(LAPIC_t* lapic);
 uint8_t inline get_lapic_maxLVT(LAPIC_t* lapic);
 
-void inline send_IPI(IPICommand_t command);
+void inline send_IPI(IPICommand_t *command);
 
 void inline write_eflags(uint32_t a);
 

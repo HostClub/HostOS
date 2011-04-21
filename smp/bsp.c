@@ -287,37 +287,55 @@ void checkCPUs() {
 	}
 
 	c_printf("Local APIC\n");
-	c_printf("  ID:      %d\n", local_apic->id);
-	c_printf("  Version: %d\n", get_lapic_version(local_apic));
-	c_printf("  Max LVT: %d\n", get_lapic_maxLVT(local_apic));
+	c_printf("  ID:      0x%x\n", local_apic->id);
+	c_printf("  Version: 0x%x\n", get_lapic_version(local_apic));
+	c_printf("  Max LVT: 0x%x\n", get_lapic_maxLVT(local_apic));
+	c_printf("  SVR:     0x%x\n", local_apic->svr);
 
 	c_printf("Press any key to startup second processor...");
 	c_getchar();
 
 	IPICommand_t ipi;
-	ipi.upper.destination = 1;
-	ipi.lower.shorthand = 0;
-	ipi.lower.triggerMode = 0;
-	ipi.lower.level = 0;
-	ipi.lower.destMode = 0;
-	ipi.lower.deliveryMode = 5;
-	ipi.lower.vector = 0;
+	set_ipi_destination(&ipi, 1);
+	set_ipi_shorthand(&ipi, IPI_SHORTHAND_NONE);
+	set_ipi_triggermode(&ipi, IPI_TRIGGER_EDGE);
+	set_ipi_level(&ipi, IPI_LEVEL_ASSERT);
+	set_ipi_destinationmode(&ipi, IPI_DESTMODE_PHYSICAL);
+	set_ipi_deliverymode(&ipi, IPI_DELMODE_INIT);
+	set_ipi_vector(&ipi, 0);
 
-	send_IPI(ipi);
+	/*ipi.upper.destination = 1;
+	ipi.lower.shorthand = IPI_SHORTHAND_NONE;
+	ipi.lower.triggerMode = IPI_TRIGGER_EDGE;
+	ipi.lower.level = IPI_LEVEL_ASSERT;
+	ipi.lower.destMode = IPI_DESTMODE_PHYSICAL;
+	ipi.lower.deliveryMode = IPI_DELMODE_INIT;
+	ipi.lower.vector = 0;*/
+
+	send_IPI(&ipi);
 
 	uint32_t a = 0;
 	while (++a);
 
-	ipi.upper.destination = 1;
-	ipi.lower.shorthand = 0;
-	ipi.lower.triggerMode = 0;
-	ipi.lower.level = 1;
-	ipi.lower.destMode = 0;
-	ipi.lower.deliveryMode = 6;
-	ipi.lower.vector = 0;
+	set_ipi_destination(&ipi, 1);
+	set_ipi_shorthand(&ipi, IPI_SHORTHAND_NONE);
+	set_ipi_triggermode(&ipi, IPI_TRIGGER_EDGE);
+	set_ipi_level(&ipi, IPI_LEVEL_ASSERT);
+	set_ipi_destinationmode(&ipi, IPI_DESTMODE_PHYSICAL);
+	set_ipi_deliverymode(&ipi, IPI_DELMODE_STARTUP);
+	set_ipi_vector(&ipi, 0);
 
-	send_IPI(ipi);
-	
+	/*ipi.upper.destination = 1;
+	ipi.lower.shorthand = IPI_SHORTHAND_NONE;
+	ipi.lower.triggerMode = IPI_TRIGGER_EDGE;
+	ipi.lower.level = IPI_LEVEL_ASSERT;
+	ipi.lower.destMode = IPI_DESTMODE_PHYSICAL;
+	ipi.lower.deliveryMode = IPI_DELMODE_STARTUP;
+	ipi.lower.vector = 0;*/
+
+	send_IPI(&ipi);
+	while (++a);
+	send_IPI(&ipi);
 	while (++a);
 
 	c_printf("Sent the STARTUP IPI\nPress any key to continue...");
@@ -326,14 +344,66 @@ void checkCPUs() {
 	__panic("Hey, look!");
 }
 
-void inline send_IPI(IPICommand_t command) {
-	struct IPICommandLower *low = (struct IPICommandLower *)&local_apic->icr_lo;
+void inline send_IPI(IPICommand_t *command) {
+	/*struct IPICommandLower *low = (struct IPICommandLower *)&local_apic->icr_lo;
+
+	c_printf("===IPI===\n");
+	c_printf(" Upper:0x%x\n", *((uint32_t *)&(command.upper)));
+	c_printf(" Lower:0x%x\n", *((uint32_t *)&(command.lower)));
+	c_printf("=========\n");
+
 
 	local_apic->icr_hi = *((uint32_t *)&(command.upper));
 	local_apic->icr_lo = *((uint32_t *)&(command.lower));
 
 	while (low->deliveryStatus) {
+		//c_printf("Waiting for send");
+	}*/
+
+
+	c_printf("===IPI===\n");
+	c_printf(" Upper:0x%x\n", command->upper);
+	c_printf(" Lower:0x%x\n", command->lower);
+	c_printf("=========\n");
+
+	local_apic->icr_hi = command->upper;
+	local_apic->icr_lo = command->lower;
+
+	while (local_apic->icr_lo & 0x1000) {
 		c_printf("Waiting for send");
 	}
 }
 
+void set_ipi_destination(IPICommand_t *ipi, uint8_t value) {
+	ipi->upper = value << 24;
+}
+
+void set_ipi_shorthand(IPICommand_t *ipi, uint8_t value) {
+	ipi->lower &= ~0x000C0000;
+	ipi->lower |= (value & 0x03) << 17;
+}
+
+void set_ipi_triggermode(IPICommand_t *ipi, uint8_t value) {
+	ipi->lower &= ~0x00008000;
+	ipi->lower |= (value & 0x01) << 15;
+}
+
+void set_ipi_level(IPICommand_t *ipi, uint8_t value) {
+	ipi->lower &= ~0x00004000;
+	ipi->lower |= (value & 0x01) << 14;
+}
+
+void set_ipi_destinationmode(IPICommand_t *ipi, uint8_t value) {
+	ipi->lower &= ~0x00000800;
+	ipi->lower |= (value & 0x01) << 11;
+}
+
+void set_ipi_deliverymode(IPICommand_t *ipi, uint8_t value) {
+	ipi->lower &= ~0x00000700;
+	ipi->lower |= (value & 0x07) << 8;
+}
+
+void set_ipi_vector(IPICommand_t *ipi, uint8_t value) {
+	ipi->lower &= ~0x000000FF;
+	ipi->lower |= value;
+}
