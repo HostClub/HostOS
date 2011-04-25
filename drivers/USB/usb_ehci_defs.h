@@ -178,4 +178,65 @@ uint32_t * _CONFIGFLAG;
 
 uint32_t _N_PORTS;
 
+struct _qtd
+{
+	uint32_t next_qtd: 27;
+	4;
+	uint8_t next_qtd_terminate: 1;
+	
+	uint32_t alternate_qtd: 27;
+	4;
+	uint8_t alternate_qtd_terminate: 1;
+	
+	uint8_t data_toggle: 1;
+
+	uint16_t bytes_to_transfer: 14;
+
+	uint8_t interrupt_on_complete: 1;
+
+	uint8_t current_page: 2;
+	uint8_t error_counter: 2;
+
+	uint8_t pid_code: 2;
+	#define OUT_TOKEN 0x00
+	#define IN_TOKEN 0x01
+	#define SETUP_TOKEN 0x02
+
+	uint8_t status: 8;
+
+	void * buffer_list[5];
+}__attribute__((packed));
+
+struct _qtd_head
+{
+	uint32_t qhlp: 27;
+	2;
+	uint8_t queue_head_type: 2;
+	#define QUEUE_HEAD_TYPE 0x01
+
+	uint8_t nak_reload: 3;
+	uint8_t control_endpoint: 1;
+	uint16_t maximum_packet_length: 10;
+
+	uint8_t reclamation_head: 1;
+	uint8_t data_toggle_control: 1;
+
+	uint8_t endpoint_speed: 2;
+	#define HIGH_SPEED 0x02
+
+	uint8_t endpoint_number: 3;
+
+	uint8_t inactivate_on_next: 1;
+
+	uint8_t device_address: 6;
+
+	//change this to bitfields later
+	uint32_t endpoint_cap;
+
+	uint32_t curr_qtd: 27;
+
+	struct _qtd;
+}__attribute__((packed));
+
+
 
