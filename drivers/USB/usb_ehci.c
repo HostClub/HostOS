@@ -3,8 +3,12 @@
 #include "ulib.h"
 #include "support.h"
 #include "x86arch.h"
+#include "kalloc.h"
 
 #include "usb_ehci_defs.h"
+
+#define USB_EHCI_DEBUG
+
 
 void usb_ehci_init(struct _pci_dev * device)
 {
@@ -101,20 +105,6 @@ void usb_ehci_init(struct _pci_dev * device)
 
 	c_puts("Ports reset\n");
 	
-	//Sleep for a bit to make sure all changes are made
-	sleep(10);
-	
-	for(port = 0; port < _N_PORTS; port++)
-	{
-		port_address = _OPERATIONALBASE + PORTSC_OFFSET + (4 * port);
-
-		uint32_t port_status = *port_address;
-
-
-		c_printf("port number: %d port status: %x\n" , port , port_status);
-
-		*port_address &= ~PORT_RESET_ENABLE;		
-	}
 	*/
 
 	//Initilization Stuff
@@ -159,8 +149,6 @@ void usb_ehci_init(struct _pci_dev * device)
 	{
 	//It seems the host controller likes to shut off after transferring control
 		*_USBCMD |= RUN_ENABLE;
-	
-		sleep(10);
 
 #ifdef USB_EHCI_DEBUG
 		c_puts("HOST CONTROLLER REENABLED\n");
@@ -186,11 +174,9 @@ void usb_ehci_init(struct _pci_dev * device)
 				*port_address &= ~PORT_ENABLE;
 				
 				//Wait for the port to reset
-				//sleep(10);
+				sleep(10);
 
 				*port_address &= ~PORT_RESET_ENABLE;
-
-				//sleep(10);
 			}
 		
 			//Should probably deal with it being a low speed device here
@@ -212,68 +198,24 @@ void usb_ehci_init(struct _pci_dev * device)
 	c_printf("USBCMD %x\n" , *_USBCMD);
 #endif	
 
-/*
-	while(1)
-	{
-
-		sleep(500);
-
-		c_printf("USBSTS %x\n" , *_USBSTS);
-		
-		if(*_USBSTS & PORT_CHANGE_DETECT)
-		{
-			*port_address |= CONNECT_STATUS_CHANGE_ENABLE;
-
-			*_USBSTS |= PORT_CHANGE_DETECT;
-			
-			*_USBSTS &= ~PORT_CHANGE_DETECT;
-		}
-
-
-		//port is declared above
-		uint32_t * port_address;
-
-		for(port = 0; port < _N_PORTS; port++)
-		{
-			port_address = _OPERATIONALBASE + PORTSC_OFFSET + (4 * port);
-
-			uint32_t port_status = *port_address;
-
-
-			c_printf("Port Number: %d Port Status: %x\n" , port , port_status);
-
-			if(port_status & CONNECT_STATUS_CHANGE_ENABLE)
-			{
-				c_printf("SOMETHING CHANGED ON PORT %d\n" , port);
-			}	
-
-			
-		}
-
-		
-		c_printf("USBINTR %x\n" , *_USBINTR);
-		c_printf("USBSTS %x\n" , *_USBSTS);
-		c_printf("USBCMD %x\n" , *_USBCMD);
-	}
-	//Implement the actual Init function from the ECHI spec section 4.1
-
-	sleep(10000000000);
-	*/
-
 }
 
 void _isr_usb_int(int vector , int code)
 {
 	while(*_USBSTS & *_USBINTR)
 	{
+
+#ifdef USB_EHCI_DEBUG
 		c_printf("Recieved USB Interrupt! %d %d\n" , vector , code);
+#endif
 
 		int port;
 		uint32_t * port_address;
 
-		
+#ifdef USB_EHCI_DEBUG
 		c_printf("USBINTR %x\n" , *_USBINTR);
 		c_printf("USBSTS %x\n" , *_USBSTS);
+#endif
 
 		if(*_USBSTS & PORT_CHANGE_DETECT)
 		{
@@ -286,45 +228,29 @@ void _isr_usb_int(int vector , int code)
 
 				if(port_status & CONNECT_STATUS_CHANGE_ENABLE)
 				{
+#ifdef USB_EHCI_DEBUG
 					c_printf("Something changed on port %d %x\n" , port , *port_address);
-					*port_address |= CONNECT_STATUS_CHANGE_ENABLE;
-				}	
-
-				c_printf("Current port status %d %x\n" , port , *port_address);
-
+#endif
+					//*port_address |= CONNECT_STATUS_CHANGE_ENABLE;
+				}
 			}
 
 			*_USBSTS |= PORT_CHANGE_DETECT;
 			
-			//*_USBSTS &= ~PORT_CHANGE_DETECT;
 		}
 		else if(*_USBSTS & USB_INT_ENABLE)
 		{
-			*_USBSTS &= ~USB_INT; 
+			*_USBSTS |= USB_INT; 
 		}
 		else if(*_USBSTS & FRAME_LIST_ROLLOVER_ENABLE)
 		{
 			*_USBSTS |= FRAME_LIST_ROLLOVER_ENABLE;
 		}
 
-		/*for(port = 0; port < _N_PORTS; port++)
-		{
-			port_address = _OPERATIONALBASE + PORTSC_OFFSET + (4 * port);
-
-			uint32_t port_status = *port_address;
-
-
-			c_printf("Port Number: %d Port Status: %x\n" , port , port_status);
-
-			if(port_status & CONNECT_STATUS_CHANGE_ENABLE)
-			{
-				c_printf("SOMETHING CHANGED ON PORT %d\n" , port);
-				break;
-			}	
-		}*/
-
-		
+#ifdef USB_EHCI_DEBUG
 		c_printf("USBSTS %x\n" , *_USBSTS);
+#endif
+
 	}
 
 	__outb( PIC_MASTER_CMD_PORT, PIC_EOI );
@@ -332,3 +258,49 @@ void _isr_usb_int(int vector , int code)
 
 }
 
+struct _qtd_head * _create_setup_qtd(int device)
+{
+	struct _qtd * next = _kalloc(sizeof(struct _qtd));
+
+	next->next_qtd |= QTD_TERMINATE;
+
+	/*uint32_t pid = 0x0A << 4;
+	pid |= ~0x0A;
+
+	* next->buffer_pointer[0] = pid;
+	*/
+
+	next->qtd_token |= PID_CODE_IN << PID_CODE_OFFSET;
+
+	struct _qtd * setup_qtd = _kalloc(sizeof(struct _qtd));
+
+	curr_qtd->next_qtd = next << 4;
+	curr_qtd->alternate_qtd |= QTD_TERMINATE;
+
+	curr_qtd->qtd_token |= 8 << BYTES_TO_TRANSFER_OFFSET;
+	
+	curr_qtd->qtd_token |= PID_CODE_SETUP << PID_CODE_OFFSET;
+
+	curr_qtd 
+
+	struct _qtd_head * head = _create_qtd_head(device , 0);
+}
+
+struct _qtd_head * _create_qtd_head(int device , int endpoint)
+{
+	struct _qtd_head * curr_qtd_head = _kalloc(sizeof(struct _qtd_head));
+
+	curr_qtd_head->qhlp |= QUEUE_TERMINATE;
+
+	curr_qtd_head->endpoint_char |= _MAX_PACKET_LENGTH << MAX_PACKET_LENGTH_OFFSET;
+	
+	curr_qtd_head->endpoint_char |= EPS_HIGH_SPEED << EPS_OFFSET;	
+	curr_qtd_head->endpoint_char |= endpoint << ENDPOINT_OFFSET;
+
+	curr_qtd_head->endpoint_char |= device << DEVICE_OFFSET;
+
+	return curr_qtd_head;
+
+	
+	
+}
