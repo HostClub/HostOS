@@ -65,3 +65,16 @@ void prt_status( char *msg, status_t stat ) {
 	c_printf( msg, str );
 
 }
+
+void memset(void * loc , int value , int num_bytes)
+{
+	//Not sure if this is neccesary
+	char * byte_loc = loc;
+
+	int i;
+	for(i = 0; i < num_bytes; i++)
+	{
+		byte_loc[i] = value;
+	}
+}
+
