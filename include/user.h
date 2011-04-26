@@ -76,6 +76,11 @@
 
 
 /*
+** User Test Functions
+*/
+#define SPAWN_PCI_TEST
+
+/*
 ** Prototypes for externally-visible routines
 */
 
