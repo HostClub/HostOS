@@ -671,8 +671,22 @@ void user_z( void ) {
 
 void user_pci_test( void ) {
 
+	struct _pci_dev test;
+	struct _pci_dev * found;
 	c_puts( "User PCI_Test running\n" );
+	test.class = 0x4010000; //find audio device
+	test.next = NULL;
 	_pci_init();
+	found = _find_pci( &test );
+
+	if( found != NULL ){
+		c_puts( "Found audio device!\n");
+	} 
+	else
+	{
+		c_puts( "Couldn't find audio device\n");
+	}
+	
 	c_puts( "User PCI_Test exiting\n" );
 
 }
@@ -734,20 +748,7 @@ void init( void ) {
 		exit( X_FAILURE );
 	}
 
-	c_puts( "PCI testing started\n");
-
-	pid = fork();
-	if( pid < 0 ) {
-		c_puts( "init: can't fork() idle\n" );
-	} else if( pid == 0 ) {
-		exec( PRIO_MINIMUM, _pci_init );
-		c_puts( "init: can't exec idle\n" );
-		exit( X_FAILURE );
-	}
-
-	c_puts( "PCI testing ended\n");
-
-
+	
 
 /*
 #ifdef SPAWN_A

@@ -60,7 +60,7 @@ struct _pci_bus
 //
 
 struct _pci_bus root;
-struct _pci_dev pci_devices;
+struct _pci_dev * pci_devices;
 
 //
 //METHOD HEADERS
@@ -70,7 +70,7 @@ void _pci_init(void);
 
 uint32_t _pci_list(struct _pci_bus * bus);
 
-void _find_pci(struct _pci_dev * search);
+struct _pci_dev * _find_pci(struct _pci_dev * search);
 
 uint32_t _pci_config_read_word(uint8_t bus , uint8_t slot , uint8_t function , uint8_t offset);
 
