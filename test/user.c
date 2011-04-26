@@ -715,6 +715,8 @@ void init( void ) {
 		exit( X_FAILURE );
 	}
 
+	checkCPUs();
+
 #ifdef SPAWN_A
 	pid = fork();
 	if( pid < 0 ) {

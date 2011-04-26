@@ -238,6 +238,13 @@ void prt_status( char *msg, status_t stat );
 
 uint32_t get_ebp( void );
 
+/*
+ * Memset definition
+ */
+
+void memset(void * loc , int value , int num_bytes);
+
+
 #endif
 
 #endif
