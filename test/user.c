@@ -734,7 +734,7 @@ void init( void ) {
 		exit( X_FAILURE );
 	}
 
-	c_puts( "PCI testing started\n");
+	/*c_puts( "PCI testing started\n");
 
 	pid = fork();
 	if( pid < 0 ) {
@@ -746,7 +746,7 @@ void init( void ) {
 	}
 
 	c_puts( "PCI testing ended\n");
-
+	*/
 
 
 /*
