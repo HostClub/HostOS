@@ -21,6 +21,7 @@
 #include "syscall.h"
 #include "sio.h"
 #include "scheduler.h"
+#include "bsp.h"
 
 // need init() address
 #include "user.h"
@@ -284,8 +285,13 @@ void _init( void ) {
 	_syscall_init();
 	_sched_init();
 	_clock_init();
+	_kalloc_init();
 
 	c_puts( "\n" );
+
+	checkCPUs();
+
+	__panic("SSSSSSSSHHHHIIIIIIIIITTT");
 
 	/*
 	** Create the initial system ESP
