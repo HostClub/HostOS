@@ -34,6 +34,7 @@ void usb_ehci_init(struct _pci_dev * device)
 	_USBSTS = (_OPERATIONALBASE + USBSTS_OFFSET);
 	_CONFIGFLAG = (_OPERATIONALBASE + CONFIGFLAG_OFFSET);
 
+	_ASYNCLISTADDR = (_OPERATIONALBASE + ASYNCLISTADDR_OFFSET);
 #ifdef USB_EHCI_DEBUG
 	c_printf("USBBASE %x\n" , _BASE);
 	c_printf("CAPLENGTH %x\n" , *_CAPLENGTH);
@@ -187,28 +188,31 @@ void usb_ehci_init(struct _pci_dev * device)
 
 	_USBINTR = _OPERATIONALBASE + USBINTR_OFFSET;
 
-	*_USBINTR = USB_INT_ENABLE | PORT_CHANGE_INT_ENABLE;
+	*_USBINTR = USB_INT_ENABLE | PORT_CHANGE_INT_ENABLE | ASYNC_ADV_INT_ENABLE;
 	
 	__install_isr(USB_INT_VEC , _isr_usb_int);
 
+	while(1)
+	{
+		sleep(1000);
 #ifdef USB_EHCI_DEBUG
-	c_printf("USBINTR %x\n" , *_USBINTR);
 	c_printf("USBINTR %x\n" , *_USBINTR);
 	c_printf("USBSTS %x\n" , *_USBSTS);
 	c_printf("USBCMD %x\n" , *_USBCMD);
 #endif	
+	}
 
 }
 
 void _isr_usb_int(int vector , int code)
 {
-	while(*_USBSTS & *_USBINTR)
-	{
-
+	
 #ifdef USB_EHCI_DEBUG
-		c_printf("Recieved USB Interrupt! %d %d\n" , vector , code);
+	c_printf("Recieved USB Interrupt %d %d\n" , vector , code);
 #endif
 
+	while(*_USBSTS & *_USBINTR)
+	{
 		int port;
 		uint32_t * port_address;
 
@@ -232,6 +236,23 @@ void _isr_usb_int(int vector , int code)
 					c_printf("Something changed on port %d %x\n" , port , *port_address);
 #endif
 					//*port_address |= CONNECT_STATUS_CHANGE_ENABLE;
+				
+					struct _qtd_head * head = _create_setup_qtd(port);
+
+#ifdef USB_EHCI_DEBUG
+					uint32_t * field_ptr = head;
+					
+					int i;
+					for(i = 0; i < 4; i++)
+					{
+						c_printf("%x\n" , field_ptr[i]);
+					}
+#endif
+					*_ASYNCLISTADDR = head;
+#ifdef USB_EHCI_DEBUG
+					c_puts("Enabling ASYNC Transfers\n");
+#endif
+					*_USBCMD |= ASYNC_ENABLE;
 				}
 			}
 
@@ -258,49 +279,111 @@ void _isr_usb_int(int vector , int code)
 
 }
 
+struct _qtd * _create_qtd(uint32_t next , uint8_t toggle , uint32_t bytes_to_transfer , uint8_t pid_code)
+{
+#ifdef USB_EHCI_DEBUG
+	c_puts("Creating new qtd\n");
+#endif
+
+	struct _qtd * curr_qtd = _kalloc(sizeof(struct _qtd));
+
+	if(next == -1)
+	{
+		curr_qtd->next_qtd_terminate = 1;
+	}
+	else
+	{
+		curr_qtd->next_qtd = next;
+	}
+
+	curr_qtd->alternate_qtd_terminate = 1;
+
+	curr_qtd->data_toggle = toggle;
+
+	curr_qtd->bytes_to_transfer = bytes_to_transfer;
+
+	curr_qtd->interrupt_on_complete = 1;
+
+	curr_qtd->pid_code = pid_code;
+	
+	curr_qtd->status = 0x80;
+
+	_alloc_qtd_buffer(curr_qtd , bytes_to_transfer);
+
+	return curr_qtd;
+}
+
+void _alloc_qtd_buffer(struct _qtd * curr_qtd , uint32_t buffer_size)
+{
+	void * buffer = _kalloc(buffer_size);
+
+	//uint32_t offset = buffer % EHCI_PAGE_SIZE;
+
+	//uint32_t
+
+	curr_qtd->buffer_list[0] = buffer;
+}
+
 struct _qtd_head * _create_setup_qtd(int device)
 {
-	struct _qtd * next = _kalloc(sizeof(struct _qtd));
-
-	next->next_qtd |= QTD_TERMINATE;
-
-	/*uint32_t pid = 0x0A << 4;
-	pid |= ~0x0A;
-
-	* next->buffer_pointer[0] = pid;
-	*/
-
-	next->qtd_token |= PID_CODE_IN << PID_CODE_OFFSET;
-
-	struct _qtd * setup_qtd = _kalloc(sizeof(struct _qtd));
-
-	curr_qtd->next_qtd = next << 4;
-	curr_qtd->alternate_qtd |= QTD_TERMINATE;
-
-	curr_qtd->qtd_token |= 8 << BYTES_TO_TRANSFER_OFFSET;
 	
-	curr_qtd->qtd_token |= PID_CODE_SETUP << PID_CODE_OFFSET;
 
-	curr_qtd 
+	struct _qtd * next = _create_qtd(-1 , 0 , 0 , OUT_TOKEN);
+
+	next = _create_qtd(next , 1 , 12 , IN_TOKEN);
+
+	struct _qtd * setup_qtd = _create_qtd(next , 0 , 8 , SETUP_TOKEN);
+
+	struct _ehci_request * setup_request = setup_qtd->buffer_list[0];
+
+	setup_request->type = 0x80;
+	setup_request->request = 6;
+	setup_request->value_high = 3;
+	setup_request->length = 12;
+#ifdef USB_EHCI_DEBUG
+	c_puts("Current setup register\n");
+	uint32_t * index_ptr = setup_request;
+	int i;
+	for(i = 0; i < 8; i ++)
+	{
+		c_printf("%d: %x\n" ,i ,  index_ptr[i]);
+	}
+#endif
 
 	struct _qtd_head * head = _create_qtd_head(device , 0);
+
+	head->curr_qtd = setup_qtd;
+	//head->qtd.next_qtd = setup_qtd;
+
+	return head;
 }
+
 
 struct _qtd_head * _create_qtd_head(int device , int endpoint)
 {
+#ifdef USB_EHCI_DEBUG
+	c_puts("Creating new qtd_head\n");
+#endif
 	struct _qtd_head * curr_qtd_head = _kalloc(sizeof(struct _qtd_head));
-
-	curr_qtd_head->qhlp |= QUEUE_TERMINATE;
-
-	curr_qtd_head->endpoint_char |= _MAX_PACKET_LENGTH << MAX_PACKET_LENGTH_OFFSET;
 	
-	curr_qtd_head->endpoint_char |= EPS_HIGH_SPEED << EPS_OFFSET;	
-	curr_qtd_head->endpoint_char |= endpoint << ENDPOINT_OFFSET;
+	curr_qtd_head->qhlp = 0;
 
-	curr_qtd_head->endpoint_char |= device << DEVICE_OFFSET;
+	curr_qtd_head->queue_head_type = QUEUE_HEAD_TYPE;
+	curr_qtd_head->queue_terminate = 1;
+
+	
+	curr_qtd_head->max_packet_length = _MAX_PACKET_LENGTH;
+	
+	curr_qtd_head->endpoint_speed = EPS_HIGH_SPEED;	
+	curr_qtd_head->endpoint_number = endpoint;
+
+	curr_qtd_head->device_address = device;
+
+	curr_qtd_head->endpoint_cap = 0;
+
+	curr_qtd_head->curr_qtd = 0;
+
+	//curr_qtd_head->qtd = 0;
 
 	return curr_qtd_head;
-
-	
-	
 }

@@ -73,6 +73,8 @@ uint32_t _OPERATIONALBASE;
 #define USBCMD_OFFSET 0x00
 uint32_t * _USBCMD;
 
+
+#define ASYNC_ENABLE (1 << 5)
 #define HCRESET_ENABLE (1 << 1)
 #define RUN_ENABLE (1 << 0)
 
@@ -93,7 +95,7 @@ uint32_t * _USBINTR;
 
 //Refer to table 2-11 of the EHCI spec
 
-#define ASYNC_ADVANCE_ENABLE 	0x00000020
+#define ASYNC_ADV_INT_ENABLE 	0x00000020
 #define HOST_SYSTEM_ERROR_ENABLE 	0x00000010
 #define FRAME_LIST_ROLLOVER_INT_ENABLE 	0x00000008
 #define PORT_CHANGE_INT_ENABLE 		0x00000004
@@ -177,52 +179,58 @@ uint32_t * _CONFIGFLAG;
 //Non-Spec Globals
 
 uint32_t _N_PORTS;
+uint32_t _MAX_PACKET_LENGTH = 64;
 
+/*
 struct _qtd
 {
-	uint32_t next_qtd: 27;
-	4;
-	uint8_t next_qtd_terminate: 1;
+	unsigned next_qtd: 27;
+	unsigned :4;
+	unsigned next_qtd_terminate: 1;
 	
-	uint32_t alternate_qtd: 27;
-	4;
-	uint8_t alternate_qtd_terminate: 1;
+	unsigned alternate_qtd: 27;
+	unsigned :4;
+	unsigned alternate_qtd_terminate: 1;
 	
-	uint8_t data_toggle: 1;
+	unsigned data_toggle: 1;
 
-	uint16_t bytes_to_transfer: 14;
+	unsigned bytes_to_transfer: 14;
 
-	uint8_t interrupt_on_complete: 1;
+	unsigned interrupt_on_complete: 1;
 
-	uint8_t current_page: 2;
-	uint8_t error_counter: 2;
+	unsigned current_page: 2;
+	
+	unsigned error_counter: 2;
 
-	uint8_t pid_code: 2;
+	unsigned pid_code: 2;
 	#define OUT_TOKEN 0x00
 	#define IN_TOKEN 0x01
 	#define SETUP_TOKEN 0x02
 
-	uint8_t status: 8;
+	unsigned status: 8;
 
 	void * buffer_list[5];
+	#define BUFFER_POINTER_OFFSET 12
 }__attribute__((packed));
 
 struct _qtd_head
 {
 	uint32_t qhlp: 27;
-	2;
+	unsigned:2;
 	uint8_t queue_head_type: 2;
 	#define QUEUE_HEAD_TYPE 0x01
 
+	uint8_t queue_terminate: 1;
+
 	uint8_t nak_reload: 3;
 	uint8_t control_endpoint: 1;
-	uint16_t maximum_packet_length: 10;
+	uint16_t max_packet_length: 10;
 
 	uint8_t reclamation_head: 1;
 	uint8_t data_toggle_control: 1;
 
 	uint8_t endpoint_speed: 2;
-	#define HIGH_SPEED 0x02
+	#define EPS_HIGH_SPEED 0x02
 
 	uint8_t endpoint_number: 3;
 
@@ -235,8 +243,8 @@ struct _qtd_head
 
 	uint32_t curr_qtd: 27;
 
-	struct _qtd;
+	struct _qtd qtd;
 }__attribute__((packed));
-
+*/
 
 
