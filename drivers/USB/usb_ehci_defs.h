@@ -73,7 +73,7 @@ uint32_t _OPERATIONALBASE;
 #define USBCMD_OFFSET 0x00
 uint32_t * _USBCMD;
 
-
+#define ASYNC_ADV_DOORBELL_ENABLE (1 << 6)
 #define ASYNC_ENABLE (1 << 5)
 #define HCRESET_ENABLE (1 << 1)
 #define RUN_ENABLE (1 << 0)
