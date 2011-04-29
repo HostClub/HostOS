@@ -226,7 +226,10 @@ void _kfree( void *address ){
 **		the list of free memory blocks.
 */
 void _kalloc_init( void ){
-	extern	int	_end;
+	c_puts("In _kalloc_init\n");
+	
+	
+	extern int _end;
 	blockinfo_t	*block;
 	blockinfo_t	**pointer = &_freelist;
 	volatile int	*addr;
@@ -236,7 +239,12 @@ void _kalloc_init( void ){
 	int	present;
 	int	last_present = FALSE;
 
-	for( addr = (volatile int *)&_end;
+	
+	c_printf("End %x %x\n" , _end , &_end);
+	
+	//TODO UNCOMMENT THIS
+	//for( addr = (volatile int *)&_end;
+	  for( addr = (volatile int *)0x0100000; 
 	    addr <= (volatile int *)0xf0000000;
 	    addr += increment ){
 		/*
@@ -303,6 +311,9 @@ void _kalloc_init( void ){
 		}
 	}
 
+	c_printf("%x\n" , addr);
+	c_puts("Ending _kalloc_init\n");
+	
 	dump_freelist();
 
 }

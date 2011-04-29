@@ -33,10 +33,10 @@ build:
 	cd boot &&  make && cp *.o ../build/ && cp *.b ../build/
 	cd kernel && make && cp *.o ../build/
 	cd lib && make && cp *.o ../build/
-	cd utils && make && cp *.o ../build/
-	cd drivers && make && cp *.o ../build/
+	cd utils && make
+	cd drivers && make 
 	cd test && make && cp *.o ../build/
-	cd smp && make && cp *.o ../build/
+	#cd smp && make && cp *.o ../build/
 
 BOOT_OBJ = build/bootstrap.b
 BOOT_SRC = boot/bootstrap.S
