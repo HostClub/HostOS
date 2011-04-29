@@ -85,6 +85,8 @@ uint32_t * _USBSTS;
 #define USB_INT (1 << 0)
 #define PORT_CHANGE_DETECT (1 << 2)
 #define FRAME_LIST_ROLLOVER_ENABLE (1 << 3)
+#define INT_ASYNC_ADV_ENABLE (1 << 5)
+
 #define HCHALTED_ENABLE (1 << 12)
 
 #define USBINTR_OFFSET 8
