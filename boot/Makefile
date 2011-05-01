@@ -1,3 +1,9 @@
+BSOURCES := bootstrap.S trampoline.S
+SOURCES := $(BSOURCES) startup.S
+ASMFILES := $(SOURCES:.S=.s)
+OBJFILES := $(SOURCES:.S=.o)
+BFILES := $(BSOURCES:.S=.b)
+
 BUILD_DIR = ../build
 
 USER_OPTIONS = -DCLEAR_BSS_SEGMENT -DISR_DEBUGGING_CODE -DSP2_CONFIG
@@ -9,27 +15,25 @@ CPPFLAGS = $(USER_OPTIONS) -nostdinc -iquote $(INCLUDES)
 AS = as
 ASFLAGS =
 
-.SUFFIXES:	.S .b
+.PHONY: all clean
+.INTERMEDIATE: $(ASMFILES)
 
-all: bootstrap.o startup.o bootstrap.b
+all: $(OBJFILES) $(BFILES)
 
-.c.s:
-	$(CC) $(CFLAGS) -S $*.c
+%.s: %.c
+	$(CC) $(CFLAGS) -S -o $@ $<
 
-.S.s:
-	$(CPP) $(CPPFLAGS) -o $*.s $*.S
+%.s: %.S
+	$(CPP) $(CPPFLAGS) -o $@ $<
 
-.S.o:
-	$(CPP) $(CPPFLAGS) -o $*.s $*.S
-	$(AS) -o $*.o $*.s -a=$*.lst
-	$(RM) -f $*.s
+%.o: %.s
+	$(AS) -o $@ $< -a=$*.lst
 
-.s.b:
-	$(AS) -o $*.o $*.s -a=$*.lst
-	$(LD) -Ttext 0x0 -s --oformat binary -e begtext -o $*.b $*.o
+%.b: %.o
+	$(LD) -Ttext 0x0 -s --oformat binary -e begtext -o $@ $<
 
-.c.o:
-	$(CC) $(CFLAGS) -c $*.c
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f *.nl *.lst *.b *.o *.image *.dis BuildImage Offsets
+	$(RM) $(OBJFILES) $(BFILES) $(ASMFILES)

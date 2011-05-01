@@ -3,6 +3,11 @@
 
 #include "headers.h"
 
+#define DL_ERROR   3
+#define DL_WARNING 2
+#define DL_INFO    1
+#define DL_DEBUG   0
+
 #define VENDOR_ID      0x00000000
 #define FEATURE_INFO   0x00000001
 #define D_CACHE_PARAM  0x00000004
@@ -24,6 +29,8 @@
 #define MP_SIG           0x5f504d5f    /* _MP_ */
 
 #define DEFAULT_LAPIC_ADDRESS  0xFEE00000
+
+#define AP_TARGET_ADDRESS 0x00008000
 
 typedef struct _MPConfigTable {
 	char signature[4];
@@ -164,25 +171,6 @@ void set_ipi_deliverymode(IPICommand_t *ipi, uint8_t value);
 
 void set_ipi_vector(IPICommand_t *ipi, uint8_t value);
 
-/*typedef struct _IPICommand {
-	struct __attribute__((PACKED)) IPICommandUpper {
-		uint32_t : 24;
-		uint8_t destination : 8;
-	} upper;
-
-	struct __attribute__((PACKED)) IPICommandLower {
-		uint8_t vector : 8;
-		uint8_t deliveryMode : 3;
-		uint8_t destMode : 1;
-		uint8_t deliveryStatus : 1;
-		uint8_t : 1;
-		uint8_t level : 1;
-		uint8_t triggerMode : 1;
-		uint8_t : 2;
-		uint8_t shorthand : 2;
-		uint32_t : 12;
-	} lower;
-} IPICommand_t;*/
 
 uint8_t inline get_lapic_version(LAPIC_t* lapic);
 uint8_t inline get_lapic_maxLVT(LAPIC_t* lapic);
@@ -209,6 +197,15 @@ void strncpy(char *, char *, int);
 
 void checkCPUs(void);
 
+void startup_CPU(int id);
+
+
+
+// Logging helpers
+void inline error(char *str, ...);
+void inline warn(char *str, ...);
+void inline info(char *str, ...);
+void inline debug(char *str, ...);
 
 
 extern LAPIC_t *local_apic;
