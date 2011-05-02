@@ -1,5 +1,5 @@
 CSOURCES := c_io.c ulibc.c mutex.c
-SCOURCES := ulibs.S
+SSOURCES := ulibs.S
 ASMFILES := $(CSOURCES:.c=.s) $(SSOURCES:.S=.s)
 OBJFILES := $(CSOURCES:.c=.o) $(SSOURCES:.S=.o)
 
