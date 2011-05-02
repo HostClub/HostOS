@@ -1,3 +1,8 @@
+CSOURCES := c_io.c ulibc.c mutex.c
+SCOURCES := ulibs.S
+ASMFILES := $(CSOURCES:.c=.s) $(SSOURCES:.S=.s)
+OBJFILES := $(CSOURCES:.c=.o) $(SSOURCES:.S=.o)
+
 BUILD_DIR = ../build
 
 USER_OPTIONS = -DCLEAR_BSS_SEGMENT -DISR_DEBUGGING_CODE -DSP2_CONFIG
@@ -14,28 +19,25 @@ ASFLAGS =
 
 LD = ld
 
-all: c_io.o ulibc.o ulibs.o
+.PHONY: all clean
+.INTERMEDIATE: $(ASMFILES)
 
-.SUFFIXES:>-.S .b
+all: $(OBJFILES)
 
-.c.s:
-	$(CC) $(CFLAGS) -S $*.c
+%.s: %.c
+	$(CC) $(CFLAGS) -S -o $@ $<
 
-.S.s:
-	$(CPP) $(CPPFLAGS) -o $*.s $*.S
+%.s: %.S
+	$(CPP) $(CPPFLAGS) -o $@ $<
 
-.S.o:
-	$(CPP) $(CPPFLAGS) -o $*.s $*.S
-	$(AS) -o $*.o $*.s -a=$*.lst
-	$(RM) -f $*.s
+%.o: %.s
+	$(AS) -o $@ $< -a=$*.lst
 
-.s.b:
-	$(AS) -o $*.o $*.s -a=$*.lst
-	$(LD) -Ttext 0x0 -s --oformat binary -e begtext -o $*.b $*.o
+%.b: %.o
+	$(LD) -Ttext 0x0 -s --oformat binary -e begtext -o $@ $<
 
-.c.o:
-	$(CC) $(CFLAGS) -c $*.c
-
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f *.nl *.lst *.b *.o *.image *.dis BuildImage Offsets
+	$(RM) $(OBJFILES) $(ASMFILES)
