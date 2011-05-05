@@ -202,7 +202,7 @@ struct _pci_dev * _find_pci(struct _pci_dev * search)
 	while( temp != NULL )
 	{
 		//check if current classcode matches current classcode
-		if( temp->class == search->class )
+		if( temp->class >> 8  == search->class >> 8 )
 		{
 			//found it
 			return temp;
