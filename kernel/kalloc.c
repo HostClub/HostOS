@@ -274,8 +274,8 @@ void _kalloc_init( void ){
 	
 	//TODO UNCOMMENT THIS
 	//for( addr = (volatile int *)&_end;
-	  for( addr = (volatile int *)0xd0000000; 
-	    addr <= (volatile int *)0xf0000000;
+	  for( addr = &_end; 
+	    addr <= (volatile int *)0xd0000000;
 	    addr += increment ){
 		/*
 		** Store something and then read it back to see if there
