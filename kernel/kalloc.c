@@ -80,7 +80,12 @@ blockinfo_t	*_freelist;
 **		caller must not depend on this in any way.  If no memory
 **		is available, NULL is returned.
 */
-void *_kalloc( uint_t desired_length ){
+void *_kalloc(uint_t desired_length)
+{
+	return _kalloc_align(desired_length , 1);
+}
+
+void *_kalloc_align( uint_t desired_length  , uint32_t alignment){
 	blockinfo_t	*block;
 	blockinfo_t	**pointer;
 
@@ -96,10 +101,12 @@ void *_kalloc( uint_t desired_length ){
 	*/
 	pointer = &_freelist;
 	block = _freelist;
-	while( block != NULL && block->length < desired_length ){
+	while( block != NULL && block->length < desired_length){
 		pointer = &block->info.next;
 		block = *pointer;
 	}
+
+
 
 	if( block == NULL ){
 		/*
@@ -112,7 +119,8 @@ void *_kalloc( uint_t desired_length ){
 	** Found an entry.  See if it is bigger than we need.
 	*/
 	if( block->length > desired_length
-	    + sizeof( blockinfo_t ) / WORD_SIZE ){
+	    + sizeof( blockinfo_t ) / WORD_SIZE 
+	    + ((uint32_t)&block->info.memory % alignment) / WORD_SIZE){
 		/*
 		** Yes, there is enough room to allocate only a piece
 		** of this block.  Construct a new block at the end of
@@ -121,10 +129,32 @@ void *_kalloc( uint_t desired_length ){
 		blockinfo_t *fragment;
 		int	fragment_size;
 
+
 		fragment_size = sizeof( block->length ) / WORD_SIZE
 		    + desired_length;
+#ifdef KALLOC_DEBUG
+		c_printf("Fragment Size prev: %d\n" , fragment_size);
+#endif
+
 		fragment = (blockinfo_t *)( &block->info.memory + block->length
 		    - fragment_size );
+#ifdef KALLOC_DEBUG
+		c_printf("Fragment prev: %x: mod %d\n" , &fragment->info.memory , ((uint32_t)&fragment->info.memory) % alignment);
+		c_printf("Fragment add %d\n" , ((uint32_t)&fragment->info.memory % alignment) / WORD_SIZE); 
+#endif
+
+		fragment_size += ((uint32_t)&fragment->info.memory % alignment) / WORD_SIZE;
+		
+#ifdef KALLOC_DEBUG
+		c_printf("Fragment Size next: %d\n" , fragment_size);
+#endif
+
+		fragment = (blockinfo_t *)( &block->info.memory + block->length
+		    - fragment_size );
+#ifdef KALLOC_DEBUG
+		c_printf("Fragment next: %x: mod %d\n" , &fragment->info.memory , ((uint32_t)&fragment->info.memory) % alignment);
+#endif
+
 		fragment->length = desired_length;
 		block->length -= fragment_size;
 		block = fragment;
@@ -244,7 +274,7 @@ void _kalloc_init( void ){
 	
 	//TODO UNCOMMENT THIS
 	//for( addr = (volatile int *)&_end;
-	  for( addr = (volatile int *)0x0100000; 
+	  for( addr = (volatile int *)0xd0000000; 
 	    addr <= (volatile int *)0xf0000000;
 	    addr += increment ){
 		/*
