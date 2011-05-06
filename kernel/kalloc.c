@@ -236,8 +236,13 @@ void _kalloc_init( void ){
 	int	present;
 	int	last_present = FALSE;
 
-	for( addr = (volatile int *)&_end;
-	    addr <= (volatile int *)0xf0000000;
+	
+	c_printf("End %x %x\n" , _end , &_end);
+	
+	//TODO UNCOMMENT THIS
+	//for( addr = (volatile int *)&_end;
+	  for( addr = &_end; 
+	    addr <= (volatile int *)0xd0000000;
 	    addr += increment ){
 		/*
 		** Store something and then read it back to see if there
