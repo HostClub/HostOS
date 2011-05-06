@@ -80,6 +80,18 @@ extern	blockinfo_t	*_freelist;	/* First free block in the system */
 void	*_kalloc( uint_t desired_length );
 
 /*
+** Name:	_kalloc_align
+**
+** Description:	Dynamically allocates a block of memory from the system's
+**		available memory.
+** Arguments:	Number of bytes desired
+**				Byte alignment
+** Returns:	A pointer to a block of memory at least that large (or
+**		NULL if no block was found)
+*/
+void	*_kalloc_align( uint_t desired_length, uint32_t alignment );
+
+/*
 ** Name:	_kfree
 **
 ** Description:	Frees a previously allocated block of dynamic memory.
