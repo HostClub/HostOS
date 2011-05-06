@@ -674,13 +674,14 @@ void user_pci_test( void ) {
 	struct _pci_dev test;
 	struct _pci_dev * found;
 	c_puts( "User PCI_Test running\n" );
-	test.class = 0x4010000; //find audio device
+	test.class = 0x4030000; //find audio device
 	test.next = NULL;
 	_pci_init();
 	found = _find_pci( &test );
 
 	if( found != NULL ){
 		c_puts( "Found audio device!\n");
+		c_printf("Dev#%d Fun#%d Vendor=%x Device=%x\n", found->device_num, found->function_num, found->vendor, found->device);
 	} 
 	else
 	{
@@ -690,6 +691,8 @@ void user_pci_test( void ) {
 	c_puts( "User PCI_Test exiting\n" );
 
 }
+
+
 
 /*
 ** SYSTEM PROCESSES
