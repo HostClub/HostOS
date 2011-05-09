@@ -83,6 +83,7 @@ uint32_t * _USBCMD;
 uint32_t * _USBSTS;
 
 #define USB_INT (1 << 0)
+#define USB_ERR_INT (1 << 1)
 #define PORT_CHANGE_DETECT (1 << 2)
 #define FRAME_LIST_ROLLOVER_ENABLE (1 << 3)
 #define INT_ASYNC_ADV_ENABLE (1 << 5)
@@ -98,11 +99,10 @@ uint32_t * _USBINTR;
 //Refer to table 2-11 of the EHCI spec
 
 #define ASYNC_ADV_INT_ENABLE 	0x00000020
-#define HOST_SYSTEM_ERROR_ENABLE 	0x00000010
+#define HOST_ERR_INT_ENABLE 	0x00000010
 #define FRAME_LIST_ROLLOVER_INT_ENABLE 	0x00000008
 #define PORT_CHANGE_INT_ENABLE 		0x00000004
-#define USB_ERROR_INT_ENABLE 		0x00000002
-
+#define USB_ERR_INT_ENABLE 		0x00000002
 #define USB_INT_ENABLE 			0x00000001
 #define USB_INT_VEC 0x2a
 
@@ -248,5 +248,7 @@ struct _qtd_head
 	struct _qtd qtd;
 }__attribute__((packed));
 */
+
+//Private method decs
 
 

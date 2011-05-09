@@ -38,14 +38,14 @@ struct _qtd
 
 	#define STATUS_ACTIVE_ENABLE (1 << 7)
 
-	void * buffer_list[5];
+	void * buffer_list[10];
 }__attribute__((packed));
 
 struct _qtd_head
 {
 	uint32_t qhlp;
 	#define QHLP_OFFSET 5
-	#define QUEUE_HEAD_TYPE_OFFSET 2
+	#define QUEUE_HEAD_TYPE_OFFSET 1
 	#define QUEUE_HEAD_TYPE (0x01 << QUEUE_HEAD_TYPE_OFFSET)
 	#define QHLP_TERMINATE 1
 
@@ -70,11 +70,11 @@ struct _ehci_request
 {
 	uint8_t type;
 	uint8_t request;
-	uint8_t value_low;
 	uint8_t value_high;
+	uint8_t value_low;
 	uint16_t index;
 	uint16_t length;
-} __attribute__((packed));
+} __attribute__((__packed__));
 
 
 struct _qtd * _create_qtd(uint32_t next , uint8_t toggle , uint32_t bytes_to_transfer , uint8_t pid_code);
@@ -84,5 +84,11 @@ void _alloc_qtd_buffer(struct _qtd * curr_qtd , uint32_t buffer_size);
 struct _qtd_head * _create_setup_qtd(int device);
 
 struct _qtd_head * _create_qtd_head(uint32_t next , int device , int endpoint);
+
+void print_qtd(struct _qtd * qtd);
+
+void print_qtd_head(struct _qtd_head * qtd_head);
+
+void print_qtd_buffer(uint8_t * qtd_buffer , int buffer_size);
 
 #endif
