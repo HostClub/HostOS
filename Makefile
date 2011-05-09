@@ -11,10 +11,12 @@
 #
 # User supplied files
 #
-U_C_SRC = kernel/kalloc.c kernel/clock.c kernel/klibc.c kernel/queue.c kernel/process.c kernel/scheduler.c lib/sio.c \
-	  kernel/stack.c kernel/syscall.c kernel/system.c lib/ulibc.c test/user.c
-U_C_OBJ = build/kalloc.o build/clock.o build/klibc.o build/queue.o build/process.o build/scheduler.o build/sio.o \
-	  build/stack.o build/syscall.o build/system.o build/ulibc.o build/user.o
+U_C_SRC = kernel/clock.c kernel/klibc.c kernel/queue.c kernel/process.c kernel/scheduler.c lib/sio.c \
+	  kernel/stack.c kernel/syscall.c kernel/system.c lib/ulibc.c test/user.c \
+		mm/paging.c mm/mm.c mm/framefunc.c
+U_C_OBJ = build/clock.o build/klibc.o build/queue.o build/process.o build/scheduler.o build/sio.o \
+	  build/stack.o build/syscall.o build/system.o build/ulibc.o build/user.o \
+		mm/paging.c mm/mm.c mm/framefunc.c
 U_S_SRC = kernel/klibs.S lib/ulibs.S
 U_S_OBJ = build/klibs.o build/ulibs.o
 U_LIBS	=
@@ -33,6 +35,7 @@ build:
 	cd boot &&  make && mv *.o ../build/ && mv *.b ../build/
 	cd kernel && make && mv *.o ../build/
 	cd lib && make && mv *.o ../build/
+	cd mm && make && mv *.o ../build/
 	cd utils && make
 	cd test && make && mv *.o ../build/
 
@@ -91,5 +94,6 @@ clean:
 	cd boot && make clean
 	cd kernel && make clean
 	cd lib && make clean
+	cd mm && make clean
 	cd build && rm -f *.o *.b *.nl *.image
 	cd utils && rm -f BuildImage && rm -f Offsets

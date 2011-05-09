@@ -1,44 +1,76 @@
-#include <paging.h>
+#define __KERNEL__20103__
+
+#include "paging.h"
+#include "framefunc.h"
+#include "mm.h"
 
 // 4gb?
-#define PHYS_MEM_SIZE = 0x100000000
-#define PAGE_SIZE = 0x1000
+//#define PHYS_MEM_SIZE 0x100000000
+// 16MB
+#define PHYS_MEM_SIZE 0x1000000
+#define PAGE_SIZE 0x1000
+#define TABLE_SIZE 1024
+#define SIZE 32
+#define OFFSET(a) (a%SIZE)
+#define INDEX(a) (a/SIZE)
+
+extern uint32_t alloc_addr;
 
 void init_paging(){
-  total_frames = PHYS_MEM_SIZE / PAGE_SIZE;
-  //frames = some kmalloc thing I have to implement
-  //#do I have memset?  Could use it here
+  uint32_t total_frames = PHYS_MEM_SIZE / PAGE_SIZE;
+  uint32_t *frame_loc = (uint32_t*)kalloc(INDEX(total_frames), 0, 0);
+  memset(frame_loc, 0, INDEX(total_frames));
 
-  //dir = (page_dir_t*) kmallac something I should implement
-  //set up map
-  //for(int i = 0; i < //something in mem I should implement; i+=PAGE_SIZE){
-   
-    //allocate a frame ( get a page (i, 1, dir), other info);
-  //}
+  page_dir_t *base_dir = (page_dir_t*)kalloc(sizeof(page_dir_t), 0, 1);
+  memset(base_dir, 0, sizeof(page_dir_t));
+  base_dir->phys_addr = (uint32_t)base_dir->phys_tables;
 
-  //need a page fault handler
+  int i = 0;
+  while( i < alloc_addr) {
+    falloc( get_page (i, 1, base_dir), frame_loc, total_frames, 0, 0);
+    i+=PAGE_SIZE;
+  }
 
-  //enable
+  //TODO: page fault  turn on intterupt
+
+  move_page_dir(base_dir);
 }
 
-void change_page_dir(page_dir_t *new){
-  // need to load in the CR3 table, probably use some
-  // inline asm calls
+//basically got this code from the osdev wiki on paging
+//wiki.osdev.org/Setting_Up_Paging
+void move_page_dir(page_dir_t *new){
+  asm volatile("mov %0, %%cr3":: "b"(new->phys_addr));
+  uint32_t cr0;
+  asm volatile("mov %%cr0, %0": "=b"(cr0));
+  cr0 |= 0x80000000;
+  asm volatile("mov %0, %%cr0":: "b"(cr0));
 } 
 
 page_t *get_page(uint32_t addr, int create, page_dir_t *dir){
+  addr /= PAGE_SIZE;
   //the table of the addr
-  uint32_t table = (addr / PAGE_SIZE) / 1024;
+  uint32_t table = addr / TABLE_SIZE;
+  uint32_t page = addr % TABLE_SIZE;
   
   // if it exists then return the directory
+  if(dir->tables[table]){
+    return &dir->tables[table]->p[page];
+  }else if(create){
+    uint32_t tmp;
+    dir->tables[table] = (page_table_t*)kalloc(sizeof(page_table_t), &tmp, 0);
+    memset(dir->tables[table], 0, PAGE_SIZE);
+    dir->phys_tables[table] = tmp | 0x7; //TODO: WHAT BITS???!?!!
+    return &dir->tables[table]->p[page];
+  }else {
+    return 0;
+  }
+}
 
-  // do I need to create a new one?
-     //use kmallac again to allocate a new table
-     //CAN I HAZ MEMSET
-     //set the correct flags in the tables
-     // return it
+void memset( void * loc, int value, int n){
+  char * byte_loc = loc;
 
-  //otherwise
-    //error?
-
+  int i;
+  for(i=0; i< n; i++){
+    byte_loc[i] = value;
+  }
 }

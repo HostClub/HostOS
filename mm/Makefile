@@ -12,8 +12,7 @@ CFLAGS = -fno-builtin -Wall -Wstrict-prototypes $(CPPFLAGS)
 AS = as
 ASFLAGS =
 
-all: clock.o klibc.o klibs.o process.o queue.o scheduler.o \
-		 stack.o support.o syscall.o system.o isr_stubs.o sio.o
+all: framefunc.o mm.o paging.o
 
 .SUFFIXES:>-.S .b
 

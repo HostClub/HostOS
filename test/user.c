@@ -715,6 +715,14 @@ void init( void ) {
 		exit( X_FAILURE );
 	}
 
+  init_paging();
+  c_puts( "paging init started, really?");
+
+  uint32_t *ptr = (uint32_t*)0xA0000000;
+  uint32_t thisshouldfault = *ptr;
+  
+  c_puts("didnt fault, crap....");
+
 #ifdef SPAWN_A
 	pid = fork();
 	if( pid < 0 ) {
