@@ -13,6 +13,7 @@
 #include "headers.h"
 
 #include "user.h"
+#include "paging.h"
 
 /*
 ** USER PROCESSES
@@ -715,13 +716,17 @@ void init( void ) {
 		exit( X_FAILURE );
 	}
 
+  c_puts ("try to init paging");
   init_paging();
   c_puts( "paging init started, really?");
 
   uint32_t *ptr = (uint32_t*)0xA0000000;
   uint32_t thisshouldfault = *ptr;
   
+  
+  
   c_puts("didnt fault, crap....");
+  c_printf(" %d", thisshouldfault);
 
 #ifdef SPAWN_A
 	pid = fork();

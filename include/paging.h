@@ -2,6 +2,7 @@
 #define PAGING_H_
 
 #include "headers.h"
+#include "support.h"
 
 #ifndef __ASM__20093__
 
@@ -52,6 +53,7 @@ page_t *get_page(uint32_t addr, int create, page_dir_t *dir);
 
 
 //TODO:page fault handler
+void __page_fault_handler( int vector, int code );
 
 
 //TODO: REMOVE LATER
