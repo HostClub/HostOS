@@ -81,9 +81,9 @@ struct _qtd * _create_qtd(uint32_t next , uint8_t toggle , uint32_t bytes_to_tra
 
 void _alloc_qtd_buffer(struct _qtd * curr_qtd , uint32_t buffer_size);
 
-struct _qtd_head * _create_setup_qtd(int device);
+struct _qtd * _create_setup_qtd(int device);
 
-struct _qtd_head * _create_qtd_head(uint32_t next , int device , int endpoint);
+struct _qtd_head * _create_qtd_head(uint32_t next , int device , int endpoint , int reclamation);
 
 void print_qtd(struct _qtd * qtd);
 
