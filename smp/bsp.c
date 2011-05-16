@@ -1,11 +1,12 @@
 #include "headers.h"
 #include "bsp.h"
 #include "c_io.h"
-
+#include "trampoline.h"
 
 #define DEBUG_LEVEL DL_DEBUG
 
 LAPIC_t *local_apic;
+mutex_t *processor_started = (mutex_t *)STARTUP_MUTEX;
 
 void inline write_eflags(uint32_t a) {
 	asm("push  %%eax;\
@@ -321,9 +322,9 @@ void checkCPUs() {
 	info("  Max LVT: 0x%x\n", get_lapic_maxLVT(local_apic));
 	info("  SVR:     0x%x\n", local_apic->svr);
 
-	debug("0x9000 = '%s'\n", (char *)0x9000);
-
-	startup_CPU(1);
+	if (!startup_CPU(1)) {
+		error("Could not start processor 1\n");
+	}
 
 	//debug("Press any key to startup second processor...");
 	//c_getchar();
@@ -358,8 +359,9 @@ void checkCPUs() {
 	__panic("Hey, look!");
 }
 
-void startup_CPU(int id) {
+bool_t startup_CPU(int id) {
 	info("Starting up CPU (id=%d)\n", id);
+	mutex_clear(processor_started);
 
 	IPICommand_t ipi;
 	set_ipi_destination(&ipi, id);
@@ -392,39 +394,40 @@ void startup_CPU(int id) {
 	send_IPI(&ipi);
 	while (++a);
 
-	a = 0xFFFF0000;
+	a = 0xF0000000;
 	while (++a);
 
-	debug("0x9000 = '%s'\n", (char *)0x9000);
+	debug("0x%x\n", *((int *)STARTUP_MUTEX));
+
+	debug("APIC: 0x%x\n", *((int *)0x1B));
+	//debug("TEST: 0x%x\n", *((int *)0x9000));
+
+	//mutex_test_and_set(processor_started);
+
+	bool_t result = mutex_is_set(processor_started);
+	mutex_clear(processor_started);
+
+	if (result) {
+		debug("Started processor (id = %d)\n", id);
+	} else {
+		debug("Could not start processor (id = %d)\n", id);
+	}
+
+	return result;
 }
 
 void inline send_IPI(IPICommand_t *command) {
-	/*struct IPICommandLower *low = (struct IPICommandLower *)&local_apic->icr_lo;
-
-	debug("===IPI===\n");
-	debug(" Upper:0x%x\n", *((uint32_t *)&(command.upper)));
-	debug(" Lower:0x%x\n", *((uint32_t *)&(command.lower)));
-	debug("=========\n");
-
-
-	local_apic->icr_hi = *((uint32_t *)&(command.upper));
-	local_apic->icr_lo = *((uint32_t *)&(command.lower));
-
-	while (low->deliveryStatus) {
-		//debug("Waiting for send");
-	}*/
-
-	debug("===IPI===\n");
+	/*debug("===IPI===\n");
 	debug(" Upper:0x%x\n", command->upper);
 	debug(" Lower:0x%x\n", command->lower);
-	debug("=========\n");
+	debug("=========\n");*/
 
 	local_apic->icr_hi = command->upper;
 	local_apic->icr_lo = command->lower;
 
-	while (local_apic->icr_lo & 0x1000) {
-		debug("Waiting for send");
-	}
+	//while (local_apic->icr_lo & 0x1000) {
+	//	debug("Waiting for send");
+	//}
 }
 
 void set_ipi_destination(IPICommand_t *ipi, uint8_t value) {

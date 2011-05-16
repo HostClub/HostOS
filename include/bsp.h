@@ -2,6 +2,8 @@
 #define BSP_H
 
 #include "headers.h"
+#include "types.h"
+#include "mutex.h"
 
 #define DL_ERROR   3
 #define DL_WARNING 2
@@ -31,6 +33,12 @@
 #define DEFAULT_LAPIC_ADDRESS  0xFEE00000
 
 #define AP_TARGET_ADDRESS 0x00008000
+
+
+
+
+extern mutex_t *processor_started;
+
 
 typedef struct _MPConfigTable {
 	char signature[4];
@@ -197,7 +205,7 @@ void strncpy(char *, char *, int);
 
 void checkCPUs(void);
 
-void startup_CPU(int id);
+bool_t startup_CPU(int id);
 
 
 

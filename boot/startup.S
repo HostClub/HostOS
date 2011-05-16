@@ -44,6 +44,32 @@ _start:
 	movb	$0x00, %al	/* re-enable NMIs (bootstrap */
 	outb	$0x70		/*   turned them off) */
 
+/* Check to see if this is the BSP */
+	movl (IA32_APIC_BASE), %eax
+	andl $BSP_MASK, %eax
+	jnz bsp_startup
+
+
+	xorl	%eax, %eax	/* clear EAX */
+	movw	$GDT_DATA, %ax	/* GDT entry #3 - data segment */
+	movw	%ax, %ds	/* for all four data segment registers */
+	movw	%ax, %es
+	movw	%ax, %fs
+	movw	%ax, %gs
+
+	movw	$GDT_STACK, %ax	/* entry #4 is the stack segment */
+	movw	%ax, %ss
+
+	movl	0x8F00, %ebp	/* set up the system frame pointer */
+	movl	%ebp, %esp	/* and stack pointer */
+
+
+	call _ap_init
+	movl $22, 0x9000
+	jmp .
+
+
+bsp_startup:
 
 /*
 ** Set the data and stack segment registers (code segment register
@@ -61,6 +87,10 @@ _start:
 
 	movl	$TARGET_STACK, %ebp	/* set up the system frame pointer */
 	movl	%ebp, %esp	/* and stack pointer */
+
+
+	//movl $20, 0x9000
+
 
 #ifdef CLEAR_BSS_SEGMENT
 
