@@ -701,18 +701,18 @@ void init( void ) {
 
 	c_puts( "Init started\n" );
 
-	writec( '$' );
+	//writec( '$' );
   
 
   c_puts( "paging init started, really?\n");
 
-  uint32_t *ptr = (uint32_t*)0xA0000000;
-  uint32_t thisshouldfault = *ptr;
+//  uint32_t *ptr = (uint32_t*)0xA0000000;
+//  uint32_t thisshouldfault = *ptr;
   
   
   
-  c_puts("didnt fault, crap....");
-  c_printf(" %d", thisshouldfault);
+//  c_puts("didnt fault, crap....");
+//  c_printf(" %d", thisshouldfault);
 	
   /*
 	** Always start the idle process first

@@ -275,7 +275,6 @@ void _init( void ) {
 
 	c_puts( "Starting module init: " );
 
-  _paging_init();
 	_q_init();		// must be first
 	_pcb_init();
 	_stack_init();
@@ -283,6 +282,7 @@ void _init( void ) {
 	_syscall_init();
 	_sched_init();
 	_clock_init();
+  _paging_init();
 
 	c_puts( "\n" );
 
