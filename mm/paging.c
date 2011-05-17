@@ -23,26 +23,36 @@
 #define PAGE_DEBUG
 
 extern uint32_t alloc_addr;
+extern uint32_t* frame_loc;
+extern uint32_t total_frames;
+page_dir_t *base_dir = 0;
+page_dir_t *cur_dir = 0;
 
-void init_paging(){
-  uint32_t total_frames = PHYS_MEM_SIZE / PAGE_SIZE;
+void _paging_init(){
+  c_puts("paging ");
+  total_frames = PHYS_MEM_SIZE / PAGE_SIZE;
 
-  c_puts("trying to get frame loc... in kalloc\n");
+  c_puts("\ntrying to get frame loc... in kalloc\n");
 
 
-  uint32_t *frame_loc = (uint32_t*)kalloc(INDEX(total_frames), 0, 0);
+  frame_loc = (uint32_t*)kalloc(INDEX(total_frames), 0, 0);
   memset(frame_loc, 0, INDEX(total_frames));
+
+  c_printf("frames %d\n", frame_loc);
 
   c_puts("trying to get mem for the page dir\n");
 
-  page_dir_t *base_dir = (page_dir_t*)kalloc(sizeof(page_dir_t), 0, 1);
+  //page_dir_t *base_dir = (page_dir_t*)kalloc(sizeof(page_dir_t), 0, 1);
+  base_dir = (page_dir_t*)kalloc(sizeof(page_dir_t), 0, 1);
   memset(base_dir, 0, sizeof(page_dir_t));
-  base_dir->phys_addr = (uint32_t)base_dir->phys_tables;
+  //base_dir->phys_addr = (uint32_t)base_dir->phys_tables;
+  cur_dir = base_dir;
+  c_printf("basedir %d\n", base_dir);
 
   int i = 0;
   c_puts("loop fllocing the pages\n");
   while( i < alloc_addr) {
-    falloc( get_page (i, 1, base_dir), frame_loc, total_frames, 0, 0);
+    falloc( get_page (i, 1, base_dir), 0, 0);
     i+=PAGE_SIZE;
   }
 
@@ -51,18 +61,23 @@ void init_paging(){
   __install_isr( INT_PAGE_FAULT, __page_fault_handler);
 
   c_puts("turn on paging...\n");
+  c_printf("basedir %d\n", base_dir);
   move_page_dir(base_dir);
 
-  c_puts("return...?\n");
+  c_puts("GOOO...?\n");
 }
 
 //basically got this code from the osdev wiki on paging
 //wiki.osdev.org/Setting_Up_Paging
 void move_page_dir(page_dir_t *new){
-  asm volatile("mov %0, %%cr3":: "b"(new->phys_addr));
+  c_puts("Cross yo fingerz\n");
+  cur_dir = new;
+  asm volatile("mov %0, %%cr3":: "b"(&new->phys_tables));
   uint32_t cr0;
+  c_puts("Hold.....\n");
   asm volatile("mov %%cr0, %0": "=b"(cr0));
   cr0 |= 0x80000000;
+  c_puts("Hold.................\n");
   asm volatile("mov %0, %%cr0":: "b"(cr0));
 } 
 
@@ -77,7 +92,7 @@ page_t *get_page(uint32_t addr, int create, page_dir_t *dir){
     return &dir->tables[table]->p[page];
   }else if(create){
     uint32_t tmp;
-    dir->tables[table] = (page_table_t*)kalloc(sizeof(page_table_t), &tmp, 0);
+    dir->tables[table] = (page_table_t*)kalloc(sizeof(page_table_t), &tmp, 1);
     memset(dir->tables[table], 0, PAGE_SIZE);
     dir->phys_tables[table] = tmp | 0x7; //TODO: WHAT BITS???!?!!
     return &dir->tables[table]->p[page];
@@ -111,7 +126,8 @@ void memset( void * loc, int value, int n){
   char * byte_loc = loc;
 
   int i;
-  for(i=0; i< n; i++){
-    byte_loc[i] = value;
+  for(i=0; i< n; i++, byte_loc++){
+    *byte_loc = value;
   }
+  return loc;
 }

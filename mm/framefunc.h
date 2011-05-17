@@ -25,10 +25,10 @@
 //static void clear_bit(uint32_t addr, uint32_t **frames);
 
 //allocates frame
-void falloc(page_t *p, uint32_t *f, uint32_t nf, int write, int kernel);
+void falloc(page_t *p, int write, int kernel);
 
 //frees a frame
-void ffree(page_t *p, uint32_t *f);
+void ffree(page_t *p);
 
 #endif
 

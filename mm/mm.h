@@ -34,7 +34,7 @@
 
 //used Doug Lea's (GNU library, also nearby ACM holder) malloc as a reference
 typedef struct malloc_chunk {
-  uint8_t              free;      //0 if alloc'd, 1 if free
+  uint32_t             used;      //0 if free, x space used 
   uint32_t             prev_foot; //size of the previous chunk
   uint32_t             head;      //size of this chunk
   struct malloc_chunk *fnext;     //used if free chunk
@@ -43,9 +43,7 @@ typedef struct malloc_chunk {
 
 typedef struct heap {
   chunk_t *free;
-  uint32_t start;
-  uint32_t end;
-  uint32_t max;
+  uint32_t size;
 
   //TODO: ADD PAGING EXPANDING FLAGS
 } heap_t;

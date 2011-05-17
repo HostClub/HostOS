@@ -14,6 +14,7 @@
 
 #include "headers.h"
 
+#include "paging.h"
 #include "system.h"
 #include "clock.h"
 #include "process.h"
@@ -274,6 +275,7 @@ void _init( void ) {
 
 	c_puts( "Starting module init: " );
 
+  _paging_init();
 	_q_init();		// must be first
 	_pcb_init();
 	_stack_init();
