@@ -143,6 +143,11 @@ MPFloatPointer_t *findMPFPS() {
 }
 
 
+/*
+** Sends the INIT-SIPI-SIPI command sequence to the specified
+** processor. Returns whether or not the processor actually started.
+*/
+
 bool_t startup_CPU(int id) {
 	info("Starting up CPU (id=%d)\n", id);
 	mutex_clear(processor_started);
@@ -201,6 +206,12 @@ bool_t startup_CPU(int id) {
 	return result;
 }
 
+
+/*
+** Start up all of the CPUs specified in the cpus structure.
+** NOTE: This currently doesn't actually start the processors.
+*/
+
 void startup_cpus(cpus_t *cpus) {
 	int i;
 
@@ -216,6 +227,13 @@ void startup_cpus(cpus_t *cpus) {
 		//}
 	}
 }
+
+
+/*
+** Initialize SMP. This detects the type of processor used by the system
+** and detects the number of logical cores. This populates a cpus_t structure
+** to hold information about each of the cores.
+*/
 
 void initSMP() {
 	int cpu_count = checkCPUs();
@@ -334,7 +352,7 @@ int32_t checkCPUs() {
 ** Prints out basic cpu caching information
 */
 
-void cache_info() {
+void cache_info(char *dummy) {
 	// Enumerate the deterministic cache parameters
 	uint32_t data[5];
 	uint32_t id;
@@ -378,6 +396,10 @@ void cache_info() {
 }
 
 
+/*
+** Loads the local apic's information. This is used to interogate the CPU
+** and send IPIs.
+*/
 
 void build_lapic_info() {
 	char temp[13];
@@ -426,6 +448,10 @@ void build_lapic_info() {
 }
 
 
+/*
+** Send the IPI described in 'command'
+*/
+
 void inline send_IPI(IPICommand_t *command) {
 	/*debug("===IPI===\n");
 	debug(" Upper:0x%x\n", command->upper);
@@ -439,6 +465,11 @@ void inline send_IPI(IPICommand_t *command) {
 	//	debug("Waiting for send");
 	//}
 }
+
+
+/*
+** Helper functions for the IPI structure
+*/
 
 void set_ipi_destination(IPICommand_t *ipi, uint8_t value) {
 	ipi->upper = value << 24;
