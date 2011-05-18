@@ -11,8 +11,6 @@
 LAPIC_t *local_apic;
 mutex_t *processor_started = (mutex_t *)STARTUP_MUTEX;
 
-int strcmp(char * first , char * second);
-
 void inline write_eflags(uint32_t a) {
 	asm("push  %%eax;\
 	     popfl;"
@@ -232,27 +230,6 @@ void startup_cpus(cpus_t *cpus) {
 }
 
 
-void cakeSetDebug(char *args) {
-	if (strcmp(args, "debug")) {
-		setDebugLevel(l_debug);
-	} else if (strcmp(args, "info")) {
-		setDebugLevel(l_info);
-	} else if (strcmp(args, "warn")) {
-		setDebugLevel(l_warning);
-	} else if (strcmp(args, "error")) {
-		setDebugLevel(l_error);
-	} else {
-		c_printf("Unrecognized debug level");
-	}
-}
-
-void cakeStartCPU(char *args) {
-	int id = args[0] - '0';
-
-	startup_CPU(id);
-}
-
-
 /*
 ** Initialize SMP. This detects the type of processor used by the system
 ** and detects the number of logical cores. This populates a cpus_t structure
@@ -265,8 +242,6 @@ void initSMP() {
 	setDebugLevel(l_info);
 
 	load_process("cacheinfo", cache_info);
-	load_process("setdebug", cakeSetDebug);
-	load_process("startcpu", cakeStartCPU);
 
 	if (cpu_count == -1) {
 		error("Error while checking number of CPUs\n");
