@@ -291,12 +291,14 @@ void _init( void ) {
 	_syscall_init();
 	_sched_init();
 	_clock_init();
+	_kalloc_init();
 
 	c_puts( "\n" );
 
-	checkCPUs();
+	c_puts( "Starting application processors\n" );
 
-	__panic("SSSSSSSSHHHHIIIIIIIIITTT");
+	initSMP();
+
 
 	/*
 	** Create the initial system ESP

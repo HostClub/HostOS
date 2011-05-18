@@ -1,11 +1,11 @@
-CSOURCES := c_io.c ulibc.c mutex.c
+CSOURCES := c_io.c ulibc.c mutex.c log.c
 SSOURCES := ulibs.S
 ASMFILES := $(CSOURCES:.c=.s) $(SSOURCES:.S=.s)
 OBJFILES := $(CSOURCES:.c=.o) $(SSOURCES:.S=.o)
 
 BUILD_DIR = ../build
 
-USER_OPTIONS = -DCLEAR_BSS_SEGMENT -DISR_DEBUGGING_CODE -DSP2_CONFIG
+USER_OPTIONS = -DCLEAR_BSS_SEGMENT -DISR_DEBUGGING_CODE -DSP2_CONFIG -ggdb
 INCLUDES = -I. -I../include
 
 CPP = cpp

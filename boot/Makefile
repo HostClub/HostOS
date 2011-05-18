@@ -6,7 +6,7 @@ BFILES := $(BSOURCES:.S=.b)
 
 BUILD_DIR = ../build
 
-USER_OPTIONS = -DCLEAR_BSS_SEGMENT -DISR_DEBUGGING_CODE -DSP2_CONFIG
+USER_OPTIONS = -DCLEAR_BSS_SEGMENT -DISR_DEBUGGING_CODE -DSP2_CONFIG -ggdb
 INCLUDES = -I. -I../include
 
 CPP = cpp
@@ -19,6 +19,9 @@ ASFLAGS =
 .INTERMEDIATE: $(ASMFILES)
 
 all: $(OBJFILES) $(BFILES)
+
+trampoline.b: trampoline.o
+	$(LD) -Ttext 0x0 -s --oformat binary -e begtextt -o $@ $<
 
 %.s: %.c
 	$(CC) $(CFLAGS) -S -o $@ $<

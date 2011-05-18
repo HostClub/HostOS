@@ -60,11 +60,11 @@ _start:
 	movw	$GDT_STACK, %ax	/* entry #4 is the stack segment */
 	movw	%ax, %ss
 
-	movl	0x8F00, %ebp	/* set up the system frame pointer */
+	movl	0x20000, %ebp	/* set up the system frame pointer */
 	movl	%ebp, %esp	/* and stack pointer */
 
 
-	call _ap_init
+	//call _ap_init
 	movl $22, 0x9000
 	jmp .
 
@@ -89,7 +89,7 @@ bsp_startup:
 	movl	%ebp, %esp	/* and stack pointer */
 
 
-	//movl $20, 0x9000
+	movl $20, 0x9000
 
 
 #ifdef CLEAR_BSS_SEGMENT

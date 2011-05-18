@@ -5,10 +5,6 @@
 #include "types.h"
 #include "mutex.h"
 
-#define DL_ERROR   3
-#define DL_WARNING 2
-#define DL_INFO    1
-#define DL_DEBUG   0
 
 #define VENDOR_ID      0x00000000
 #define FEATURE_INFO   0x00000001
@@ -197,23 +193,19 @@ uint32_t inline cpuid_value(uint32_t command);
 
 void inline unscramble_cpuid(uint32_t *data);
 
-void checkCPUs(void);
-
 MPFloatPointer_t *findMPFPS(void);
 
 void strncpy(char *, char *, int);
 
-void checkCPUs(void);
+uint32_t checkCPUs(void);
+
+void initSMP(void);
+
+void cache_info(void);
+
+void build_lapic_info(void);
 
 bool_t startup_CPU(int id);
-
-
-
-// Logging helpers
-void inline error(char *str, ...);
-void inline warn(char *str, ...);
-void inline info(char *str, ...);
-void inline debug(char *str, ...);
 
 
 extern LAPIC_t *local_apic;

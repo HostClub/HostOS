@@ -29,8 +29,8 @@
 	/* segment register values */
 #define	GDT_LINEAR	0x0008		/* All of memory, R/W */
 #define	GDT_CODE	0x0010		/* All of memory, R/E */
-#define	GDT_DATA	0x0018		/* All of memory, R/W */
-#define	GDT_STACK	0x0020		/* All of memory, R/W */
+#define	GDT_DATA	0x0018
+#define	GDT_STACK	0x0020
 
 
 #define BSP_MASK       0x0100

@@ -1,23 +1,24 @@
 .code16
-
 #include "bootstrap.h"
 #include "trampoline.h"
 
 BSP_BOOT_SEGMENT	= 0x07C0	/* default BIOS addr to load boot sector */
 BSP_BOOT_ADDRESS 	= 0x00007C00
-AP_BOOT_SEGMENT	= 0x0800	/* default BIOS addr to load boot sector */
-AP_BOOT_ADDRESS 	= 0x00008000
+AP_BOOT_SEGMENT =	 0x0800
+AP_BOOT_ADDRESS =	0x00008000
 
 
 /*
  ** Symbol for locating the beginning of the code.
  */
-.globl begtext
+.globl begtextt
 
 .text
-begtext:
+begtextt:
 
 cli
+xor %eax, %eax
+movl %eax, %cr0
 
 movb $5, 0x9000
 
@@ -95,8 +96,6 @@ jmp     a20wait2t
 wait2_exit:
 ret
 
-
-
 ldksfja:
 hlt
 jmp ldksfja
@@ -111,11 +110,11 @@ jmp ldksfja
 /*
  ** The GDTR and IDTR contents.
  */
-gdt_48:
+gdt_48t:
 .word	0x2000		/* 1024 GDT entries x 8 bytes/entry = 8192 */
 .quad	GDT_ADDRESS
 
-idt_48:
+idt_48t:
 .word	0x0800		/* 256 interrupts */
 .quad	IDT_ADDRESS
 
@@ -132,23 +131,25 @@ outb	%al, $0x70
 movb $8, 0x1000
 
 call	enable_A20t
+movw	%cs, %si
+movw	%si, %ds
+
 movb $9, 0x1000
 
 
-/*herp:
-hlt
-jmp herp*/
 
 /*
  ** The IDTR and GDTR are loaded relative to this segment, so we must
  ** use the full offsets from the beginning of the segment (0000:0000);
  ** however, we were loaded at 0000:8000, so we need to add that in.
  */
-lidt	idt_48 + AP_BOOT_ADDRESS
-lgdt	gdt_48 + AP_BOOT_ADDRESS
+lidt	idt_48t + AP_BOOT_ADDRESS
+lgdt	gdt_48t + AP_BOOT_ADDRESS
+
+/*lidtw 0x7db8
+lgdtw 0x7dae*/
 
 movb $10, 0x1000
-
 
 
 /*
@@ -168,6 +169,7 @@ movb $10, 0x1000
  **	.word	GDT_CODE
  */
 
+//jmp .
 
 movl	%cr0, %eax	/* get current CR0 */
 orl	$1, %eax	/* set the PE bit */
@@ -176,8 +178,8 @@ movl	%eax, %cr0	/* and store it back. */
 
 .byte	0x66	/* 32-bit mode prefix */
 .code32
-/*ljmp	$GDT_CODE, $TARGET_ADDRESS*/
-ljmp	$GDT_CODE, $(AP_BOOT_ADDRESS + target)
+ljmp	$GDT_CODE, $TARGET_ADDRESS
+/*ljmp	$GDT_CODE, $(AP_BOOT_ADDRESS + target)*/
 
 
 target:
