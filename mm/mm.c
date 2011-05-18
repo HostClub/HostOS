@@ -92,8 +92,8 @@ void *_halloc(heap_t *h, uint32_t size, int p_align){
       chunk_t* new = (chunk_t*)((int32_t)free + size + CHUNK_SIZE);
       if(p_align){
         new = (chunk_t*) (((uint32_t)new + 0x1000) - ((uint32_t)new&0xFFF));
-        size = 0x1000 + (size & 0xFFF);
-        c_puts("you actually want me aligned?\n");
+        size = 0x1000 - (size & 0xFFF);
+        c_printf("new: %x ; size: %d\n",new,size);
         //TODO: MORE?!?
       }
       new->head = free->head - size - CHUNK_SIZE; 
@@ -107,13 +107,12 @@ void *_halloc(heap_t *h, uint32_t size, int p_align){
         free->fnext->fprev = new;
       }if(free == h->free){
         h->free = new;
-        c_printf("h->free %x\n",h->free);
       }
       free->head  = size;
       free->fnext = 0;
       free->fprev = 0;
-  //    c_printf("head %d, foot %d\n", new->head, new->prev_foot);
- //     c_printf("head %d\n", free->head);
+      c_printf("head %d, foot %d\n", new->head, new->prev_foot);
+      c_printf("head %d\n", free->head);
       return (void*)((uint32_t)free + CHUNK_SIZE);
 
 

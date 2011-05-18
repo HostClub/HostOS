@@ -705,22 +705,25 @@ void init( void ) {
 	writec( '$' );
 
   writec("alloc ");
-  uint32_t z = (uint32_t)kalloc(8, 0, 0);
+  uint32_t z = (uint32_t)kalloc(16, 0, 1);
   c_printf("z: 0x%x\n", z);
 
-//  c_puts( "alloc " );
-//  uint32_t a = (uint32_t)kalloc(8, 0, 0);
-//  c_printf("a: 0x%x\n", a);
-
+  c_puts( "alloc " );
+  uint32_t a = (uint32_t)kalloc(16, 0, 1);
+  c_printf("a: 0x%x\n", a);
+/*
   c_puts( "free z\n" );
   kfree((void*)z);
 
   
   c_puts( "alloc " );
-  uint32_t d = (uint32_t)kalloc(8, 0, 0);
+  uint32_t d = (uint32_t)kalloc(12, 0, 0);
   c_printf("d: 0x%x\n", d);
   
-
+  c_puts( "alloc " );
+  uint32_t e = (uint32_t)kalloc(8, 0, 0);
+  c_printf("e: 0x%x\n", e);
+*/
  // c_puts( "paging init started, really?\n");
 
 //  uint32_t *ptr = (uint32_t*)0xA0000000;
