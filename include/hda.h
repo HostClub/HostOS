@@ -58,7 +58,7 @@
 #define HDA_IS0LVI_W 	0x8C
 #define HDA_IS0FMT_W 	0x92
 #define HDA_IS0BDPL_L 	0x98
-#define HDA_IS0BPDU_L 	0x9C
+#define HDA_IS0BDPU_L 	0x9C
 
 #define HDA_OS0CTLSTS_L 0x100
 #define HDA_OS0PIB_L 	0x104
@@ -66,7 +66,7 @@
 #define HDA_OS0LVI_W 	0x10C
 #define HDA_OS0FMT_W 	0x112
 #define HDA_OS0BDPL_L 	0x118
-#define HDA_OS0BPDU_L 	0x11C
+#define HDA_OS0BDPU_L 	0x11C
 
 
 //
@@ -92,6 +92,7 @@ struct _pci_dev * hda_dev;
 uint32_t  hda_bar;
 uint32_t  dma_bar;
 uint8_t	  hda_intln;
+uint8_t	  hda_codec_mask;
 
 uint32_t * corb_bar;
 uint32_t * rirb_bar;
@@ -103,6 +104,12 @@ struct _hda_bdl_entry * osd_bdl_bar;
 //
 
 void _hda_init(void);
-uint32_t _hda_imm_command( uint8_t cad, uint8_t nid, uint16_t vid, uint8_t payload);
-
+uint32_t _hda_imm_command_8( uint8_t cad, uint8_t nid, uint16_t vid, uint8_t payload);
+uint32_t _hda_imm_command_16( uint8_t cad, uint8_t nid, uint8_t vid, uint16_t payload);
+static void _isr_hda( int vector, int code );
+void _hda_reset_codec( uint8_t cid );
+void _hda_amplifier_unmute_all();
+void _hda_pins_output_all();
+void _hda_print_connection_select();
+void _hda_print_power_state(uint8_t cid);
 #endif
