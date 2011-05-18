@@ -296,12 +296,12 @@ void _init( void ) {
 	_sched_init();
 	_clock_init();
 	_pci_init();
-  _paging_init();
+	_paging_init();
 
 	c_puts( "\n" );
 
 	c_puts(" Ending init\n");
-	//checkCPUs();
+	checkCPUs();
 
 	//__panic("SSSSSSSSHHHHIIIIIIIIITTT");
 	/*
