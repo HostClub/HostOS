@@ -296,6 +296,7 @@ void _init( void ) {
 	_sched_init();
 	_clock_init();
 	//_pci_init();
+	build_lapic_info();
 	_paging_init();
 
 	c_puts( "\n" );

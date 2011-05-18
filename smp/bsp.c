@@ -240,6 +240,7 @@ void initSMP() {
 
 	setDebugLevel(l_info);
 
+	info("%d\n", cpu_count);
 	if (cpu_count == -1) {
 		error("Error while checking number of CPUs\n");
 		return;
@@ -247,11 +248,11 @@ void initSMP() {
 
 	cpus_t *cpus = (cpus_t *)kalloc(sizeof(cpus_t), 0, 0);
 	cpus->online_count = 0;
-	cpus->total_count = cpu_count;
+	cpus->total_count = cpu_count + 1;
 	cpus->infos = (cpu_info_t *)kalloc(sizeof(cpu_info_t *) * cpu_count, 0, 0);
 
 
-	build_lapic_info();
+	//build_lapic_info();
 
 	startup_cpus(cpus);
 }
