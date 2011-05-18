@@ -201,7 +201,7 @@ int32_t checkCPUs(void);
 
 void initSMP(void);
 
-void cache_info(void);
+void cache_info(char *dummy);
 
 void build_lapic_info(void);
 
