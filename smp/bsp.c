@@ -2,8 +2,8 @@
 #include "bsp.h"
 #include "trampoline.h"
 #include "log.h"
-#include "kalloc.h"
 #include "structs.h"
+#include "mm.h"
 
 #define DEBUG_LEVEL DL_DEBUG
 
@@ -224,10 +224,10 @@ void initSMP() {
 		return;
 	}
 
-	cpus_t *cpus = _kalloc(sizeof(cpus_t));
+	cpus_t *cpus = (cpus_t *)kalloc(sizeof(cpus_t), 0, 0);
 	cpus->online_count = 0;
 	cpus->total_count = cpu_count;
-	cpus->infos = _kalloc(sizeof(cpu_info_t *) * cpu_count);
+	cpus->infos = (cpu_info_t *)kalloc(sizeof(cpu_info_t *) * cpu_count, 0, 0);
 
 
 	build_lapic_info();

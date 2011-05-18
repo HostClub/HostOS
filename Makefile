@@ -15,7 +15,7 @@ U_C_SRC = kernel/clock.c kernel/klibc.c kernel/queue.c kernel/process.c kernel/s
 	  kernel/stack.c kernel/syscall.c kernel/system.c lib/ulibc.c test/user.c test/cakesh.c mm/mm.c mm/paging.c mm/framefunc.c 
 U_C_OBJ = build/clock.o build/klibc.o build/queue.o build/process.o build/scheduler.o build/sio.o \
 	  build/stack.o build/syscall.o build/system.o build/ulibc.o build/user.o build/pci.o build/usb_ehci.o build/bsp.o build/cakesh.o \
-	  build/bsp.o build/mutex.o build/log.o build/mm.o build/paging.o build/framefunc.o 
+	  build/mutex.o build/log.o build/mm.o build/paging.o build/framefunc.o 
 U_S_SRC = kernel/klibs.S lib/ulibs.S
 U_S_OBJ = build/klibs.o build/ulibs.o
 U_LIBS	=
@@ -98,5 +98,6 @@ clean:
 	cd lib && make clean
 	cd mm && make clean
 	cd drivers && make clean
+	cd smp && make clean
 	cd build && rm -f *.o *.b *.nl *.image
 	cd utils && rm -f BuildImage && rm -f Offsets
