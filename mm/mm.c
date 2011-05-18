@@ -3,10 +3,9 @@
  *
  * Author: Michael Baril
  *
- * Contributor:
+ * Contributor: used malloc as a reference
  *
- * Description: ...
- *
+ * Description: First Fit dynamic allocation.
  *
  */
 
@@ -18,39 +17,48 @@
 #include "x86arch.h"
 #include "paging.h"
 
-//MEM START AND HEAP START HAVE TO BE PAGE ALIGNED
+//MEM START AND mngr START HAVE TO BE PAGE ALIGNED
 #define CHUNK_SIZE     8 //size of just the allocated chunk 
-#define FIRST_CHUNK(h)  (((uint32_t)(h)) + sizeof(heap_t))
-#define NEXT_CHUNK(c)  (((uint32_t)(c)) + CHUNK_SIZE  + ((c)->head))
+
+//the first free chunk
+#define FIRST_CHUNK(h)  (((uint32_t)(h)) + sizeof(chunk_mngr_t))
+//the previous free chunk
 #define PREV_CHUNK(c)  (((uint32_t)(c)) - ((c)->prev_foot) - CHUNK_SIZE)
-#define HEAP_END(h)  ((((uint32_t)(h)) + HEAP_SIZE) - 2*(CHUNK_SIZE))
-#define ALIGN(x)     (((uint32_t)x & 0xFFFFF000) + 0x1000)
+//the next free chunk
+#define NEXT_CHUNK(c)  (((uint32_t)(c)) + CHUNK_SIZE  + ((c)->head))
+//how2 align the start of memory
+#define ALIGN_START(x)     (((uint32_t)x & 0xFFFFF000) + 0x1000)
+//aligning addresses
+#define ALIGN(x) (((uint32_t)x + 0x1000) - ((uint32_t)x&0xFFF))
 
 extern int _end;
 //uint32_t alloc_addr = (uint32_t)&_end;
 //end isnt working.....
 //use this address!
 uint32_t alloc_addr = (uint32_t)MEM_START;
-heap_t *base_heap = 0;
+chunk_mngr_t *base_mngr = 0;
 extern page_dir_t *base_dir;
 
 
 
 uint32_t kalloc(uint32_t size, uint32_t *phys_addr, uint32_t align){
-  if(base_heap == 0){
+  //before the mngr is set up
+  if(base_mngr == 0){
     if( (alloc_addr & 0xFFFFF000) && align == 1){
-      alloc_addr &= 0xFFFFF000;
-      alloc_addr += 0x1000;
+      alloc_addr = ALIGN_START(alloc_addr);
     }
 
     if(phys_addr){
       *phys_addr = alloc_addr;
     }
+
     uint32_t ret_addr = alloc_addr;
     alloc_addr += size;
     return ret_addr;
+
+  //after the mngr is all ready to go
   }else{
-    uint32_t addr = (uint32_t)_halloc(base_heap, size, align);
+    uint32_t addr = (uint32_t)_cm_alloc(base_mngr, size, align);
     if(phys_addr){
       page_t *p = get_page(addr, 0, base_dir);
       *phys_addr = p->frame * PAGE_SIZE + (addr & 0xFFF);
@@ -61,219 +69,160 @@ uint32_t kalloc(uint32_t size, uint32_t *phys_addr, uint32_t align){
 }
 
 void kfree(void *p){
-  _hfree(p,base_heap);
+  _cm_free(p,base_mngr);
 }
 
-heap_t *_heap_init( void ){
-  heap_t *h = (heap_t*)kalloc(HEAP_SIZE,0,0) ;
-  chunk_t *free = (chunk_t*)FIRST_CHUNK(h);
-  free = (chunk_t *)ALIGN(free);
-  h->free = free;
-  uint32_t size = HEAP_SIZE - 2*CHUNK_SIZE - sizeof(heap_t);
-  h->size = ALIGN(size);
-  free->fnext = 0;
-  free->fprev = 0;
-  free->head = h->size;
-  free->prev_foot = 0;
-  return h;
+chunk_mngr_t *_mngr_init( void ){
+  chunk_mngr_t *cm = (chunk_mngr_t*)kalloc(MNGR_SIZE,0,0) ;
+  chunk_t *next = (chunk_t*)FIRST_CHUNK(cm);
+  next = (chunk_t *)ALIGN_START(next);
+  cm->free = next;
+  uint32_t size = MNGR_SIZE - 2*CHUNK_SIZE - sizeof(chunk_mngr_t);
+  cm->size = ALIGN_START(size);
+  next->head = cm->size;
+  next->prev_foot = 0;
+  next->fprev = 0;
+  next->fnext = 0;
+  return cm;
 }
 
-void *_halloc(heap_t *h, uint32_t size, int p_align){
-  chunk_t *free = h->free;
+void *_cm_alloc(chunk_mngr_t *cm, uint32_t size, int p_align){
+  chunk_t *free = cm->free;
   if( !free ){
     c_puts("not free....\n");
     return 0;
   }
+  //if it is all allocated only using 8bits instead of the sizeof(chunk_t)
   if( size < sizeof(chunk_t)-CHUNK_SIZE ) {
     size = sizeof(chunk_t)-CHUNK_SIZE;
   }
   while(free){
     if( free->head > size ){
+      //make a new chunk and put the data into the old one
       chunk_t* new = (chunk_t*)((int32_t)free + size + CHUNK_SIZE);
       if(p_align){
         new = (chunk_t*) (((uint32_t)new + 0x1000) - ((uint32_t)new&0xFFF));
         size = 0x1000 - (size & 0xFFF);
-        c_printf("new: %x ; size: %d\n",new,size);
-        //TODO: MORE?!?
       }
       new->head = free->head - size - CHUNK_SIZE; 
-      //c_printf("size %d, free->head %d\n", size, free->head);
       new->prev_foot = size;
-      new->fnext = free->fnext; 
       new->fprev = free->fprev; 
-      if(free->fprev){
-        free->fprev->fnext = new;
-      }if(free->fnext){
+      new->fnext = free->fnext; 
+      
+      if(free->fnext){
         free->fnext->fprev = new;
-      }if(free == h->free){
-        h->free = new;
+      }if(free->fprev){
+        free->fprev->fnext = new;
+      }if(free == cm->free){
+        cm->free = new;
       }
+      
       free->head  = size;
-      free->fnext = 0;
       free->fprev = 0;
-      c_printf("head %d, foot %d\n", new->head, new->prev_foot);
-      c_printf("head %d\n", free->head);
+      free->fnext = 0;
       return (void*)((uint32_t)free + CHUNK_SIZE);
 
 
-    }else if (free->head == size){
-      c_printf("OHHH IT IS THE SAME SIZE!!\n");
+    }else if (free->head == size && !p_align){
+      //if it fits perfectly but is not page aligned
       if(free->fnext){
         free->fnext->fprev = free-> fprev;
-      }
-      if(free->fprev){
+      }if(free->fprev){
         free->fprev->fnext = free->fnext;
+      }if(free==cm->free){
+        cm->free = free->fnext;
       }
-      if(free==h->free){
-        h->free = free->fnext;
-      }
-      free->fnext = 0;
       free->fprev = 0;
+      free->fnext = 0;
       return (void*)((uint32_t)free + CHUNK_SIZE);
+     
     }
+    //Check the next free chunk
     free=free->fnext;
-    c_printf("next block...");
-   
   }
   return 0;
 }
 
+//merges chunks
 void coalesce(uint32_t new_head, chunk_t** m1, chunk_t** m2, chunk_t** m3){
-  c_puts("where ");
   (*m1)->head = new_head;
-  c_puts("does ");
   (*m1)->fnext = (*m2)->fnext;
-  c_puts("the ");
   if((*m2)->fnext){
     (*m2)->fnext->fprev = (*m1);
-    c_puts("rabbit ");
 
   }
-  //c_printf("\n (*m3)->prev_foot: %d\n", (*m3)->prev_foot);
-  //c_printf("\n (*m1)->head: %d\n", (*m1)->head);
-  //c_printf("\n (*m1): 0x%x\n", (*m1));
   (*m3) = (chunk_t*)((uint32_t)(*m1) + (*m1)->head + CHUNK_SIZE);
-  c_puts("hole ");
-  //(*m3)->prev_foot = (*m1)->head;
-  c_puts("lead?\n ");
-
-
+  (*m3)->prev_foot = (*m1)->head;
 }
 
-void _hfree( void *p, heap_t *h_ptr ){
-  heap_t *h = h_ptr;
+void _cm_free( void *p, chunk_mngr_t *cm_ptr ){
+  chunk_mngr_t *cm = cm_ptr;
   chunk_t *chunk = (chunk_t*)((uint32_t)p - (CHUNK_SIZE));
-  chunk_t *free = h->free;
-  chunk_t *last = h->free;
+  chunk_t *free = cm->free;
+  chunk_t *last = cm->free;
   if ( !p ){
     return;
-    //TODO ERROR;
   }
-  if( !h->free ){
-    h->free = chunk;
+  //no chunks
+  if( !cm->free ){
+    cm->free = chunk;
+    chunk->fprev = 0;
     chunk->fnext = 0;
+  //first free chunk
+  }else if(chunk < cm->free){
+    cm->free->fprev = chunk;
+    chunk->fnext = cm->free;
+    cm->free = chunk;
     chunk->fprev = 0;
-    c_printf("hfree, 0x%x : No chunks;\n", h);  
-  }else if(chunk < h->free){
-    h->free->fprev = chunk;
-    chunk->fnext = h->free;
-    h->free = chunk;
-    chunk->fprev = 0;
-    c_printf("hfree, next chunk: %x\n", h);
+  //in the midle of chunks
   }else{
     while(free){
       if(free > chunk){
-        chunk->fnext = free;
         chunk->fprev = last;
-        last->fnext = chunk;
+        chunk->fnext = free;
         free->fprev = chunk;
+        last->fnext = chunk;
         break;
       }
       last = free;
       free = free->fnext;
     }
     if(!free){
-      c_printf("hfree, last free chunk\n", h);
-      last->fnext = chunk;
       chunk->fprev = free;
       chunk->fnext = 0;
+      last->fnext = chunk;
     }
   }
+
+
   chunk_t *prev = (chunk_t*)PREV_CHUNK(chunk);
   chunk_t *next = (chunk_t*)NEXT_CHUNK(chunk);
+
+  //check to see if we are aligned
+  if(!(((uint32_t)chunk->fprev % 0x1000) ||
+       ((uint32_t)chunk->fnext % 0x1000)) &&
+      ((ALIGN(prev) == (uint32_t)chunk->fprev) || 
+       (ALIGN(next) == (uint32_t)chunk->fnext))){
+     prev = (chunk_t*)ALIGN(prev);
+     next = (chunk_t*)ALIGN(next);
+  }
   uint32_t new_head = 0;
-  c_puts("about to merge?\n");
-  //c_printf("next %x %x\n",next, next->prev_foot);
-  //c_printf("next %x %x\n",next, chunk->fnext);
+
+  //merge both
   if(prev == chunk->fprev && next == chunk->fnext){
-    c_printf("hfree, merge both\n");
     new_head = prev->head + (chunk->head + CHUNK_SIZE) +
       (next->head + CHUNK_SIZE);
     coalesce(new_head, &prev, &next, &next); 
+  
+  //merge next
   }else if(next == chunk->fnext){
-    c_printf("hfree, merge next\n");
     new_head = chunk->head + next->head + CHUNK_SIZE;
-    //c_printf("chunk->head %d\n", chunk->head);
-    //c_printf("next->head: %d\n", next->head);
-    //c_printf("new_head: %d\n", new_head);
     coalesce(new_head, &chunk, &next, &next);
+  
+  //merg prev
   }else if(prev == chunk->fprev){
-    c_printf("hfree, merge prev\n");
     new_head = prev->head + chunk->head + CHUNK_SIZE;
     coalesce(new_head, &prev, &chunk, &next);
   }
   return;
 }
-
-/*
- void _kalloc_init(void){
- chunk_t *chunk;
- volatile int *addr;
- int orig;
- int *first;
- int increment = 1;
- int present;
- int last_present = FALSE;
-
- for(addr  = (volatile int *)&_end; 
- addr <= (volatile int *)0xf0000000;
- addr += increment ){
-#define DUMMY 0x5a5aa5a5
-original = *addr;
- *addr = DUMMY;
- present = *addr == VALUE;
- *addr = original;
-
- if(present == last_present){
- continue;
- }
- if(increment != 1){
- addr -= increment;
- increment = 1;
- continue;
- }
- increment = FAST_SEARCH_INCREMENT;
- last_present = present;
-
- if(present){
- first = (int *)addr;
-//page align it...
-if(first & 0xfffff000 != 0){
-first &= 0xfffff000;
-first += 0x1000;
-}
-}else{
-if(first == (int *)VIDEO_BASE_ADDR){
-continue;
-}
-
-chunk = (chunk_t *)first;
-chunk->head = //TODO: figure out
-chunk->fnext = 0;
-chunk->fprev = 0;
-chunk->prev_foot = 0;
-}
-}
-}
- */
-

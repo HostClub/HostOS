@@ -4,7 +4,7 @@
  *
  * Author: Myqe Baril
  *
- * Contributor: 
+ * Contributor: used malloc as a reference
  *
  * Description:
  *   A memory management system written by me to better understand it and 
@@ -28,7 +28,7 @@
  * Start of C-only definitions
  */
 
-#define HEAP_SIZE 0x1000000
+#define MNGR_SIZE 0x1000000
 #define MEM_START 0x11F000
 
 
@@ -44,25 +44,58 @@ typedef struct malloc_chunk {
   struct malloc_chunk *fprev;
 } chunk_t;
 
-typedef struct heap {
+//manages the chunks
+typedef struct chunk_mngr {
   chunk_t *free;
   uint32_t size;
+} chunk_mngr_t;
 
-  //TODO: ADD PAGING EXPANDING FLAGS
-} heap_t;
-
+/*
+ * kalloc(size, address, aligned)
+ *
+ * allocates memory based on the parameters and if the mngr
+ * has been initalized yet
+ *
+ */
 uint32_t kalloc(uint32_t size, uint32_t *phys_addr, uint32_t aligned);
 
+/*
+ * kfree(ptr)
+ *
+ * frees the memory at the ptr's location
+ */
 void kfree( void *p );
 
-heap_t *_heap_init(void);
+/*
+ * chunk_mngr_t *_mngr_init(void);
+ *
+ * inits a new page aligned mngr
+ *
+ */
+chunk_mngr_t *_mngr_init(void);
 
-void *_halloc(heap_t *h, uint32_t size, int p_align);
+/*
+ * void* _cm_alloc(mngr, size, aligned?);
+ *
+ * gives a new chunk of memory depending on the options
+ *
+ */
+void *_cm_alloc(chunk_mngr_t *cm, uint32_t size, int p_align);
 
+/*
+ * coalesce(head, chunk 1, chunk 2, chunk 3)
+ *
+ * compresses the chunks depending on where they need to be compressed
+ *
+ */
 void coalesce(uint32_t new_head, chunk_t** m1, chunk_t** m2, chunk_t** m3);
 
-
-void _hfree(void *p, heap_t *h_ptr);
+/*
+ * _cm_free(ptr, mngr);
+ *
+ * frees memory in the mngr at the ptr's location for furture use
+ */
+void _cm_free(void *p, chunk_mngr_t *cm_ptr);
 
 #endif
 
