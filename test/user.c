@@ -935,7 +935,6 @@ void init( void ) {
 #endif
 */
 
-
 #ifdef SPAWN_PCI_TEST
 	c_puts("Spawning PCI_TEST\n");
 	pid = fork();
@@ -951,6 +950,7 @@ void init( void ) {
 
 	
 	c_puts("Spawning CAKESH\n");
+	
 	pid = fork();
 	if( pid < 0 ) {
 		c_puts( "init: can't fork() CAKESH\n" );

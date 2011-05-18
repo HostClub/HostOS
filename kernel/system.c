@@ -371,6 +371,7 @@ void _init( void ) {
 	** Finally, report that we're all done.
 	*/
 
+
 	c_puts( "System initialization complete.\n" );
 
 }
