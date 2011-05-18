@@ -205,11 +205,7 @@ struct _qtd
 	unsigned error_counter: 2;
 
 	unsigned pid_code: 2;
-	#define OUT_TOKEN 0x00
-	#define IN_TOKEN 0x01
-	#define SETUP_TOKEN 0x02
-
-	unsigned status: 8;
+		unsigned status: 8;
 
 	void * buffer_list[5];
 	#define BUFFER_POINTER_OFFSET 12

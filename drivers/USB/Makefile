@@ -12,7 +12,7 @@ CFLAGS = -fno-builtin -Wall -Wstrict-prototypes $(CPPFLAGS)
 AS = as
 ASFLAGS =
 
-all: usb_ehci.o
+all: usb_ehci.o usb_mass_storage.o
 
 .SUFFIXES:>-.S .b
 

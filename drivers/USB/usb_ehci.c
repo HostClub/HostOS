@@ -20,6 +20,7 @@ uint8_t * data_buffer;
 
 
 struct _qtd_head * _create_blank_qtd(int device , int num);
+struct _qtd_head * _create_init_qtd(int device , int new_device);
 
 void usb_ehci_init(struct _pci_dev * device)
 {
@@ -46,7 +47,7 @@ void usb_ehci_init(struct _pci_dev * device)
 	_USBSTS = (_OPERATIONALBASE + USBSTS_OFFSET);
 	_CTRLDSSEGMENT = (_OPERATIONALBASE + CTRLDSSEGMENT_OFFSET);
 	_CONFIGFLAG = (_OPERATIONALBASE + CONFIGFLAG_OFFSET);
-	
+
 	_ASYNCLISTADDR = (_OPERATIONALBASE + ASYNCLISTADDR_OFFSET);
 #ifdef USB_EHCI_DEBUG
 	c_printf("USBBASE %x\n" , _BASE);
@@ -60,66 +61,6 @@ void usb_ehci_init(struct _pci_dev * device)
 #endif
 
 	_N_PORTS = ( *_HSCPARAMS & N_PORTS_MASK ) >> N_PORTS_OFFSET;
-	
-	//Lets try resetting everything before we try doing things
-	/*
-	c_puts("Stopping Host controller\n");
-
-	*_USBCMD &= ~RUN_ENABLE;
-
-	c_printf("USBCMD %x\n" , *_USBCMD);
-	
-	sleep(10);
-
-	c_printf("USBSTS %x\n" , *_USBSTS);
-
-
-	while( !(*_USBSTS & HCHALTED_ENABLE))
-	{
-		//c_printf("USBSTS %x\n" , *_USBSTS);
-	}
-
-	c_puts("Host controller halted!\n");
-
-	*_USBCMD |= HCRESET_ENABLE;
-
-	c_puts("Host controller reset!\n");
-
-	sleep(20);
-
-
-	*_USBCMD |= RUN_ENABLE;
-
-	c_printf("USBCMD %x\n" , *_USBCMD);
-	c_printf("USBSTS %x\n" , *_USBSTS);
-
-	//Wait for the software to become unhalted
-	//ie HCHALTED = 0
-	while( *_USBSTS & HCHALTED_ENABLE)
-	{
-
-	}
-
-	//Now we reset all ports
-
-	int port;
-	uint32_t * port_address;
-
-	for(port = 0; port < _N_PORTS; port++)
-	{
-		port_address = _OPERATIONALBASE + PORTSC_OFFSET + (4 * port);
-
-		uint32_t port_status = *port_address;
-
-
-		c_printf("port number: %d port status: %x\n" , port , port_status);
-
-		*port_address |= PORT_RESET_ENABLE;		
-	}
-
-	c_puts("Ports reset\n");
-	
-	*/
 
 	//Initilization Stuff
 	uint32_t eecp = (*_HCCPARAMS & EECP_MASK) >> EECP_OFFSET;
@@ -132,6 +73,7 @@ void usb_ehci_init(struct _pci_dev * device)
 	if (eecp > 0)
 	{
 
+
 		_USBLEGSUP = _pci_config_read_word(device->bus->number , device->device_num , device->function_num , eecp);
 		_USBLEGCTLSTS = _pci_config_read_word(device->bus->number , device->device_num , device->function_num , eecp + USBLEGCTLSTS_OFFSET);
 
@@ -140,9 +82,10 @@ void usb_ehci_init(struct _pci_dev * device)
 		c_printf("USBLEGCTLSTS %x\n" , _USBLEGCTLSTS);
 #endif
 
+		//Write the appropriate bytes to transfer control
 		_pci_config_write_word(device->bus->number , device->device_num , device->function_num , eecp + USBLEGCTLSTS_OFFSET , _USBLEGCTLSTS | SMI_OS_OWN_ENABLE);
 		_pci_config_write_word(device->bus->number , device->device_num , device->function_num , eecp , _USBLEGSUP | HC_OS_OWNED_ENABLE);
-		
+
 		//Spin while BIOS claims they are owning EHCI
 		//Should replace this with interrupts 
 		while( _USBLEGSUP & HC_BIOS_OWNED_ENABLE )
@@ -162,7 +105,7 @@ void usb_ehci_init(struct _pci_dev * device)
 
 	if(!(*_USBCMD & RUN_ENABLE))
 	{
-	//It seems the host controller likes to shut off after transferring control
+		//It seems the host controller likes to shut off after transferring control
 		*_USBCMD |= RUN_ENABLE;
 
 #ifdef USB_EHCI_DEBUG
@@ -174,26 +117,39 @@ void usb_ehci_init(struct _pci_dev * device)
 
 	for(port = 0; port < _N_PORTS; port++)
 	{
+
 		uint32_t * port_address = _OPERATIONALBASE + PORTSC_OFFSET + (4 * port);
 		uint32_t port_status = *port_address;
 
 		//Lets check if the port is not in k_state
 		//If the port has a connection and the Line status is a high speed device
-		
+
 		if(port_status & CONNECT_STATUS)
 		{
 			if(((port_status & LINE_STATUS_MASK) >> LINE_STATUS_OFFSET) != K_STATE)
 			{
+
+				_reset_port(port);
+/*#ifdef USB_EHCI_DEBUG
+				c_printf("Resetting port %d\n" , port);
+#endif
+
+				*port_address |= PORT_POWER_ENABLE;
+
+				*port_address &= ~PORT_ENABLE;
 				//Port is a high speed device, wants a reset
 				*port_address |= PORT_RESET_ENABLE;
-				*port_address &= ~PORT_ENABLE;
-				
+
 				//Wait for the port to reset
-				sleep(10);
+				sleep(250);
 
 				*port_address &= ~PORT_RESET_ENABLE;
+
+#ifdef USB_EHCI_DEBUG
+				c_printf("Current Port Status %x\n" , *port_address);
+#endif*/
 			}
-		
+
 			//Should probably deal with it being a low speed device here
 		}
 	}
@@ -205,10 +161,12 @@ void usb_ehci_init(struct _pci_dev * device)
 
 	_USBINTR = _OPERATIONALBASE + USBINTR_OFFSET;
 
+	//Set up the ISR first so we don't recieve unexpected interrupts
 	__install_isr(USB_INT_VEC , _isr_usb_int);
 
 	uint32_t usbintr = 0;
 
+	//Enable all the interrupts
 	usbintr |= USB_INT_ENABLE; 
 	usbintr |= PORT_CHANGE_INT_ENABLE;
 	usbintr |= ASYNC_ADV_INT_ENABLE;
@@ -225,211 +183,296 @@ void usb_ehci_init(struct _pci_dev * device)
 
 
 #ifdef USB_EHCI_DEBUG
-		c_puts("Enabling ASYNC Transfers\n");
-				
 		c_printf("USBSTS %x\n" , *_USBSTS);	
 		c_printf("USBCMD %x\n" , *_USBCMD);
-				
+
 		uint32_t error  = _pci_config_read_word(_ehci->bus->number , _ehci->device_num , _ehci->function_num , 0x04);
 
 		c_printf("PCI Status %x\n" , error);
 
 		c_printf("CTRLDSSEGMENT %x\n" , *_CTRLDSSEGMENT);
 #endif		
-	
+
 		int port_index;
 
 		for(port_index = 0; port_index < _N_PORTS; port_index++)
 		{
 			int port_status = port_statuses[port_index];
 
-			if(port_status & CONNECT_STATUS_CHANGE_ENABLE)
+			uint32_t * port_address = _OPERATIONALBASE + PORTSC_OFFSET + (4 * port_index);
+			if(port_status & CONNECT_STATUS_CHANGE_ENABLE && ((port_status & LINE_STATUS_MASK) >> LINE_STATUS_OFFSET) != K_STATE)
 			{
-			
-				struct _qtd_head * head = _create_blank_qtd(port_index , 2);
-			
-				c_printf("Current QTD Head %x\n" , head);
-				queue_head = head;
-	
-				print_qtd_head(head);
+				c_printf("Resetting port %d\n" , port_index);
+				//Port is a high speed device, wants a reset
+				*port_address |= PORT_POWER_ENABLE;
 
+
+				*port_address &= ~PORT_ENABLE;
+
+				*port_address |= PORT_RESET_ENABLE;
+
+				//Wait for the port to reset
+				sleep(250);
+
+				*port_address &= ~PORT_RESET_ENABLE;
+
+				sleep(10);
+				c_printf("Current Port Status %x\n" , *port_address);
+
+
+				sleep(1000);
+
+				struct _qtd_head * head = _create_init_qtd(port_index , port_index);
+
+
+				c_printf("Current QTD Head %x\n" , head);
+
+				print_qtd_head(head);
+				/*
 				*_ASYNCLISTADDR = head;
 
-			
 				*_USBCMD |= ASYNC_ENABLE;
+				sleep(20);
 				*_USBCMD |= ASYNC_ADV_DOORBELL_ENABLE;
 
 
 				sleep(100);
 				
-				*_USBCMD |= ASYNC_ADV_DOORBELL_ENABLE;
-				
-				__panic("EXITING USB");
-			}
 
+				/_ASYNCLISTADDR = 0;
+				*_USBCMD |= ASYNC_ENABLE;
+
+				sleep(1000);
+				c_printf("USBCMD %x\n" , *_USBCMD);
+				*/
+
+				struct _qtd_head * setup  = _create_blank_qtd(port_index , 1);
+
+				head->qhlp &= 0x1F;
+				head->qhlp |= (uint32_t)setup;
+
+				setup->qhlp &= 0x1F;
+				setup->qhlp |= (uint32_t)head;
+
+				c_printf("Current QTD Head %x\n" , setup);
+				
+				print_qtd_head(setup);
+				
+				*_ASYNCLISTADDR = head;
+
+				*_USBCMD |= ASYNC_ENABLE;
+				sleep(20);
+				*_USBCMD |= ASYNC_ADV_DOORBELL_ENABLE;
+			
+				
+				sleep(100);
+
+				print_qtd_buffer(data_buffer , 18);
+				__panic("EXITING USB");
+
+			}
 		}
 
 	}
 
 }
 
+void _reset_port(int port)
+{
+	uint32_t * port_address = _OPERATIONALBASE + PORTSC_OFFSET + (4 * port);
+
+#ifdef USB_EHCI_DEBUG
+	c_printf("Resetting port %d\n" , port);
+#endif
+	
+	*port_address |= PORT_POWER_ENABLE;
+	*port_address &= ~PORT_ENABLE;
+	
+	*port_address |= PORT_RESET_ENABLE;
+
+	//Wait for the port to reset
+	sleep(250);
+
+	*port_address &= ~PORT_RESET_ENABLE;
+
+#ifdef USB_EHCI_DEBUG
+	sleep(10);
+	c_printf("Current Port Status %x\n" , *port_address);
+#endif
+
+}
 
 void _isr_usb_int(int vector , int code)
 {
-	
+
 #ifdef USB_EHCI_DEBUG
 	c_printf("Recieved USB Interrupt %d %d\n" , vector , code);
 #endif
 
-	//while(*_USBSTS & *_USBINTR)
-	//{
-		int port;
-		uint32_t * port_address;
+	int port;
+	uint32_t * port_address;
 
 #ifdef USB_EHCI_DEBUG
-		c_printf("USBINTR %x\n" , *_USBINTR);
-		c_printf("USBSTS %x\n" , *_USBSTS);
-		c_printf("USBCMD %x\n" , *_USBCMD);
+	c_printf("USBINTR %x\n" , *_USBINTR);
+	c_printf("USBSTS %x\n" , *_USBSTS);
+	c_printf("USBCMD %x\n" , *_USBCMD);
 #endif
 
-		if(*_USBSTS & PORT_CHANGE_DETECT)
+	if(*_USBSTS & PORT_CHANGE_DETECT)
+	{
+
+		for( port = 0; port < _N_PORTS; port++)
 		{
+			port_address = _OPERATIONALBASE + PORTSC_OFFSET + (4 * port);
 
-			for( port = 0; port < _N_PORTS; port++)
+			uint32_t port_status = *port_address;
+
+			port_statuses[port] = port_status;
+
+			if(port_status & CONNECT_STATUS_CHANGE_ENABLE)
 			{
-				port_address = _OPERATIONALBASE + PORTSC_OFFSET + (4 * port);
-
-				uint32_t port_status = *port_address;
-
-				port_statuses[port] = port_status;
-
-				if(port_status & CONNECT_STATUS_CHANGE_ENABLE)
-				{
 #ifdef USB_EHCI_DEBUG
-					c_printf("Something changed on port %d %x\n" , port , *port_address);
+				c_printf("Something changed on port %d %x\n" , port , *port_address);
 #endif
-					//*port_address |= CONNECT_STATUS_CHANGE_ENABLE;
-				}
-
 			}
 
-			*_USBSTS &= PORT_CHANGE_DETECT;
-			
-		}
-	
-		//c_printf("USBSTS %x\n" , *_USBSTS);
-		
-		if(*_USBSTS & USB_INT_ENABLE)
-		{
-			*_USBSTS &= USB_INT_ENABLE; 
 		}
 
-		if(*_USBSTS & USB_ERR_INT_ENABLE)
-		{
-			c_puts("RECIEVED USB ERROR\n");
-			*_USBSTS &= USB_ERR_INT_ENABLE;
+		*_USBSTS &= PORT_CHANGE_DETECT;
 
-			uint32_t error  = _pci_config_read_word(_ehci->bus->number , _ehci->device_num , _ehci->function_num , 0x04);
+	}
 
-			c_printf("Current Error: %08x\n" , error);
-		}
 
-		if(*_USBSTS & HOST_ERR_INT_ENABLE)
-		{
-			c_puts("RECIEVED HOST ERROR\n");
-			*_USBSTS &= HOST_ERR_INT_ENABLE;
-			uint32_t error  = _pci_config_read_word(_ehci->bus->number , _ehci->device_num , _ehci->function_num , 0x04);
+	if(*_USBSTS & USB_INT_ENABLE)
+	{
+		*_USBSTS &= USB_INT_ENABLE; 
+	}
 
-			c_printf("Current Error: %08x\n" , error);
+	if(*_USBSTS & USB_ERR_INT_ENABLE)
+	{
+		c_puts("RECIEVED USB ERROR\n");
+		*_USBSTS &= USB_ERR_INT_ENABLE;
+	}
 
-		}
-		
-		//c_printf("USBSTS %x\n" , *_USBSTS);
-		if(*_USBSTS & FRAME_LIST_ROLLOVER_ENABLE)
-		{
-			*_USBSTS &= FRAME_LIST_ROLLOVER_ENABLE;
-		}
-		
-		//c_printf("USBSTS %x\n" , *_USBSTS);
-		if(*_USBSTS & ASYNC_ADV_INT_ENABLE)
-		{
-			*_USBSTS &= ASYNC_ADV_INT_ENABLE; 
+	if(*_USBSTS & HOST_ERR_INT_ENABLE)
+	{
+		c_puts("RECIEVED HOST ERROR\n");
+		*_USBSTS &= HOST_ERR_INT_ENABLE;
+		uint32_t error  = _pci_config_read_word(_ehci->bus->number , _ehci->device_num , _ehci->function_num , 0x04);
+
+		c_printf("Current Error: %08x\n" , error);
+
+	}
+
+	if(*_USBSTS & FRAME_LIST_ROLLOVER_ENABLE)
+	{
+		*_USBSTS &= FRAME_LIST_ROLLOVER_ENABLE;
+	}
+
+	if(*_USBSTS & ASYNC_ADV_INT_ENABLE)
+	{
+		*_USBSTS &= ASYNC_ADV_INT_ENABLE; 
 
 #ifdef USB_EHCI_DEBUG
-			struct _qtd_head * head = *_ASYNCLISTADDR;
-			print_qtd_head(head);
+		struct _qtd_head * head = *_ASYNCLISTADDR;
+		print_qtd_head(head);
 #endif
-
-			//c_printf("USBSTS %x\n" , *_USBSTS);
-
-			//Need to re-enable the doorbell
-			//*_USBCMD |= ASYNC_ADV_DOORBELL_ENABLE;
-
-
-			c_printf("USBCMD %x\n" , *_USBCMD);
-			//c_printf("USBSTS %x\n" , *_USBSTS);
+	}
 
 #ifdef USB_EHCI_DEBUG
-			//print_qtd_head(queue_head);
-#endif
-	
-			//__panic("EXITING USB INTERRUPT");
-		}
 
-#ifdef USB_EHCI_DEBUG
-		c_printf("USBSTS %x\n" , *_USBSTS);
+	c_printf("USBCMD %x\n" , *_USBCMD);
+	c_printf("USBSTS %x\n" , *_USBSTS);
 #endif
 
-	//}
+	//We've serviced all interrupts at this point
 
 	__outb( PIC_MASTER_CMD_PORT, PIC_EOI );
 	__outb( PIC_SLAVE_CMD_PORT, PIC_EOI );
 
 }
 
+uint32_t _get_port_status(int port)
+{
+	return port_statuses[port];
+}
+
+uint32_t * _get_port_statuses( void )
+{
+	return port_statuses;
+}
+
+void _add_async_schedule(struct _qtd_head * head)
+{
+	*_USBCMD |= ASYNC_ENABLE;
+
+	*_ASYNCLISTADDR = head;
+}
+
+uint32_t _perform_async_schedule()
+{
+	*_USBCMD |= ASYNC_ENABLE;
+	
+	sleep(20);
+
+	*_USBCMD |= ASYNC_ADV_DOORBELL_ENABLE;
+
+	//Wait until The async schedule is done
+	while(!(*_USBSTS & ASYNC_ADV_INT_ENABLE))
+	{
+		sleep(10);
+	}
+
+	*_USBCMD &= ~ASYNC_ENABLE;
+}
+
+void print_qtd_token(struct _qtd_token * token)
+{
+	c_puts("QTD Token: ");
+	print_qtd_buffer(token , 4);
+}
+
 void print_qtd(struct _qtd * qtd)
 {
 	c_printf("Curr qtd %x\n" , qtd);
-	c_printf("Next QTD: %x\n" , qtd->next_qtd);
-	c_printf("Alternate QTD: %x\n" , qtd->alternate_qtd);
-	c_printf("QTD Token: %x\n" , qtd->qtd_token);
-	c_printf("Current buffer: %x\n" , qtd->buffer_list[0]);
+	c_printf("Next QTD: %x\n" , qtd->next);
+	c_printf("Alternate QTD: %x\n" , qtd->alternate);
+	print_qtd_token(&qtd->token);
+	c_printf("Current buffer: %x\n" , qtd->data_buffer[0]);
 
-	print_qtd_buffer(qtd->buffer_list[0] , 8);
+	print_qtd_buffer(qtd->data_buffer[0] , 8);
 
-	/*if(qtd->next_qtd != 1)
-	{
-		c_printf("NEXT SUB QTD\n");
-		print_qtd(qtd->next_qtd);
-	}*/
 }
 
 void print_qtd_head(struct _qtd_head * qtd_head)
 {
-	c_printf("Curr qtd_head %x\n" , qtd_head);
-	c_printf("Next QHLP %x\n" , qtd_head->qhlp);
-	c_printf("Endpoint Char %x\n" , qtd_head->endpoint_char);
-	c_printf("Endpoint Cap %x\n" , qtd_head->endpoint_cap);
-	if(qtd_head->curr_qtd != 0)
-	{
-		print_qtd(qtd_head->curr_qtd);
-	}
+	/*c_printf("Curr qtd_head %x\n" , qtd_head);
+	  c_printf("Next QHLP %x\n" , qtd_head->qhlp);
+	  if(qtd_head->curr_qtd != 0)
+	  {
+	  print_qtd(qtd_head->curr_qtd);
+	  }*/
 
-	uint32_t next_qtd_head = qtd_head->qhlp >> 5;
+	print_qtd_buffer(qtd_head , 68);
 
-	/*if(next_qtd_head != 0 && next_qtd_head != qtd_head)
-	{
-		print_qtd_head(next_qtd_head);
-	}*/
+	c_printf("Buffer Contents\n");
+
+	print_qtd_buffer(qtd_head->qtd.data_buffer[0] , 8);
+
 }
 
 void print_qtd_buffer(uint8_t * qtd_buffer , int buffer_size)
 {
 	int buffer_pointer;
-	for(buffer_pointer = buffer_size - 1; buffer_pointer >= 0; buffer_pointer--)
+	for(buffer_pointer = 0; buffer_pointer < buffer_size; buffer_pointer++)
 	{
 
 		c_printf("%02x" , qtd_buffer[buffer_pointer]);
+
+		if((buffer_pointer + 1) % 4 == 0)
+		{
+			c_puts(" ");
+		}
 	}
 
 	c_printf("\n");
@@ -438,171 +481,152 @@ void print_qtd_buffer(uint8_t * qtd_buffer , int buffer_size)
 struct _qtd * _create_qtd(uint32_t next , uint8_t toggle , uint32_t bytes_to_transfer , uint8_t pid_code)
 {
 #ifdef USB_EHCI_DEBUG
-	//c_puts("Creating new qtd\n");
+	c_puts("Creating new qtd\n");
 #endif
 
 	struct _qtd * curr_qtd = _kalloc_align(sizeof(struct _qtd) , 32);
 
 #ifdef USB_EHCI_DEBUG
-	//c_printf("Current qtd %x\n" , curr_qtd);
+	c_printf("Current qtd %x\n" , curr_qtd);
 #endif
 
 	memset(curr_qtd , 0 , sizeof(struct _qtd));
 
 	if(next == -1)
 	{
-		curr_qtd->next_qtd |= NEXT_QTD_TERMINATE;
-	
-		curr_qtd->alternate_qtd |= ALTERNATE_QTD_TERMINATE;
+
+		curr_qtd->next = QTD_TERMINATE;
 	}
 	else
 	{
 		//Must be 32 byte aligned
-		curr_qtd->next_qtd |= next;
-		//curr_qtd->alternate_qtd |= next;
+		curr_qtd->next = next;
 	}
 
+	curr_qtd->alternate = QTD_TERMINATE;
 
-	curr_qtd->qtd_token |= toggle << DATA_TOGGLE_OFFSET;
-	curr_qtd->qtd_token |= bytes_to_transfer << BYTES_TO_TRANSFER_OFFSET;
-	//curr_qtd->qtd_token |= INTERRUPT_ON_COMPLETE_ENABLE;
-	curr_qtd->qtd_token |= pid_code << PID_CODE_OFFSET;
-	curr_qtd->qtd_token |= STATUS_ACTIVE_ENABLE;
+	//Set all the standard bytes for a QTD
+	curr_qtd->token.data_toggle = toggle;
+	curr_qtd->token.bytes_to_transfer = bytes_to_transfer;
+	curr_qtd->token.interrupt = 1;
+	curr_qtd->token.pid = pid_code;
+	curr_qtd->token.status |= STATUS_ACTIVE_ENABLE;
+	curr_qtd->token.error_counter = 3;
+
+	//Create the data buffer
 	if(bytes_to_transfer > 0)
 	{
-		//c_printf("Allocating buffer %d", bytes_to_transfer);
 		_alloc_qtd_buffer(curr_qtd , bytes_to_transfer);
 	}
 
 	return curr_qtd;
 }
 
+struct _qtd * _create_setup_qtd(uint32_t next , uint8_t toggle , uint32_t bytes_to_transfer , uint8_t pid_code , uint8_t type , uint8_t request,
+				uint8_t value_high , uint8_t value_low , uint16_t index , uint16_t length)
+{
+	struct _qtd * qtd = _create_qtd(next , toggle , bytes_to_transfer , pid_code);
+
+	//qtd->data_buffer[0] = _create_ehci_request(pid_code , type , request , value_hi , value_low , index , length);
+
+	struct _ehci_request * req = qtd->data_buffer[0];
+
+	req->type = type;
+	req->request = request;
+	req->value_high = value_high;
+	req->value_low = value_low;
+	req->index = index;
+	req->length = length;
+
+	return qtd;
+}
+
 void _alloc_qtd_buffer(struct _qtd * curr_qtd , uint32_t buffer_size)
 {
-	struct _echi_request * buffer = _kalloc(buffer_size);
+	//Allocate a full buffer, probably not neccesary
+	struct _echi_request * buffer = _kalloc_align(4096 , 4096);
 
-	memset(buffer , 0 , buffer_size);
+	memset(buffer , 0 , 4096);
 
-	curr_qtd->buffer_list[0] = buffer;
+	curr_qtd->data_buffer[0] = buffer;
+}
+
+struct _qtd_head * _create_init_qtd(int device , int new_device)
+{
+	struct _qtd_head * head = _create_qtd_head(-1 , device , 0 , 1);
+
+	struct _qtd * next = _create_qtd(-1 , 1 , 0 , IN_TOKEN);
+	c_puts("Input QTD\n");	
+	print_qtd(next);
+	
+	struct _qtd * setup_qtd = _create_setup_qtd(next , 0 , 8 , SETUP_TOKEN , 0 , 5 , 0 , 5 , 0 , 0);
+
+	c_puts("Setup QTD\n");
+	print_qtd(setup_qtd);
+
+	c_puts("Current setup register\n");	
+	print_qtd_buffer(setup_qtd->data_buffer[0] , 8);
+
+	head->qtd.next = setup_qtd;
+
+	return head;
+
 }
 
 struct _qtd_head * _create_blank_qtd(int device , int num)
 {
 	int i = 0;
-	
-	/*struct _qtd * next = _create_qtd(-1 , 0 , 0 , OUT_TOKEN);
-
-	for(i = 0; i < num - 1; i++)
-	{
-		next = _create_qtd(next , 0 , 0 , OUT_TOKEN);
-	}
-	*/
-
-	struct _qtd * head_setup = _create_setup_qtd(device);
-	struct _qtd_head * head = _create_qtd_head(0 , device , 0 , 1);
-
-	head->qtd.next_qtd = head_setup;
-	//head->qtd.alternate_qtd |= (uint32_t)15 << 1;
 
 
-	/*struct _qtd * next_head_setup = _create_setup_qtd(device);
-	struct _qtd_head * next_head = _create_qtd_head(head , device , 0 , 0);
-	next_head->qtd.next_qtd = next_head_setup;
+	struct _qtd_head * head = _create_qtd_head(0 , device, 0 , 1);
 
-
-	head->qhlp |= (uint32_t)next_head;
-	*/
-	head->qhlp |= (uint32_t)head;
-	
-
-	return head;
-}
-
-struct _qtd * _create_setup_qtd(int device)
-{
-	
-
-	struct _qtd * next = _create_qtd(-1 , 0 , 0 , OUT_TOKEN);
-	c_puts("Output QTD\n");
-	//next->qtd_token |= (uint32_t)2 << 10;
+	struct _qtd * next = _create_qtd(-1 , 1 , 18 , IN_TOKEN);
+	c_puts("Input QTD\n");	
 	print_qtd(next);
 
-	next = _create_qtd(next , 1 , 18 , IN_TOKEN);
+	data_buffer = next->data_buffer[0];
 
-	c_puts("Input QTD\n");
-	print_qtd(next);
-
-	data_buffer = next->buffer_list[0];
-
-	struct _qtd * setup_qtd = _create_qtd(next , 0 , 8 , SETUP_TOKEN);
-	setup_qtd->qtd_token |= (uint32_t)3 << 10;
-
+	struct _qtd * setup_qtd = _create_setup_qtd(next , 0 , 8 , SETUP_TOKEN , 0x80 , 6 , 1 , 0  , 0 , 18);
 
 	c_puts("Setup QTD\n");
 	print_qtd(setup_qtd);
 
 
-	uint64_t * setup_request = setup_qtd->buffer_list[0];
 
-	uint64_t shift = (uint64_t)128 << 56;
-
-	* setup_request |= shift;
-	//c_printf("%x\n" , shift);
-	//print_qtd_buffer(setup_qtd->buffer_list[0] , 8);
-
-	shift = (uint64_t)6 << 48;
-	* setup_request |= shift;		
-	//c_printf("%x\n" , shift);
-	//print_qtd_buffer(setup_qtd->buffer_list[0] , 8);
-
-	shift = (uint64_t)1 << 40;
-	* setup_request |= shift;
-	//c_printf("%x\n" , shift);
-	//print_qtd_buffer(setup_qtd->buffer_list[0] , 8);
+	head->qtd.next = setup_qtd;
 
 
-	shift = (uint64_t)18 << 0;
-	* setup_request |= shift;
-	
+	//Just a placeholder 
+	/*struct _qtd * next_head_setup = _create_setup_qtd(device);
+	  struct _qtd_head * next_head = _create_qtd_head(head , device , 0 , 0);
+	  next_head->qtd.next_qtd = next_head_setup;
 
 
-	/*struct _ehci_request * setup_request = setup_qtd->buffer_list[0];
-	
+	  head->qhlp |= (uint32_t)next_head;
+	  */
 
-	setup_request->type = 0x80;
-	setup_request->request = 0x06;
-	setup_request->value_high = 0x01;
-	setup_request->length = 0x12;
-	*/
-
-	c_puts("Current setup register\n");	
-	print_qtd_buffer(setup_qtd->buffer_list[0] , 8);
-
-	/*struct _qtd_head * head = _create_qtd_head(-1 , device , 0 , 1);
-
-	//head->curr_qtd = setup_qtd;
-	head->qtd.next_qtd = setup_qtd;
+	head->qhlp |= (uint32_t)head;
 
 
-	c_puts("Current QTD Head\n");
-	print_qtd_head(head);
-*/
-	return setup_qtd;
+	return head;
 }
 
+	
+	
 
 struct _qtd_head * _create_qtd_head(uint32_t next , int device , int endpoint , int reclamation)
 {
 #ifdef USB_EHCI_DEBUG
-	//c_puts("Creating new qtd_head\n");
+	c_puts("Creating new qtd_head\n");
 #endif
+	//Need to be 32 byte aligned
 	struct _qtd_head * curr_qtd_head = _kalloc_align(sizeof(struct _qtd_head) , 32);
 
 	memset(curr_qtd_head , 0 , sizeof(struct _qtd_head));
 
 	if(next == -1)
 	{
-		//curr_qtd_head->qhlp |= QHLP_TERMINATE;
+		//Need to create a circular queue
 		curr_qtd_head->qhlp |= (uint32_t)curr_qtd_head;
 	}
 	else
@@ -613,18 +637,17 @@ struct _qtd_head * _create_qtd_head(uint32_t next , int device , int endpoint , 
 
 	curr_qtd_head->qhlp |= QUEUE_HEAD_TYPE;
 
+	//Set the appropriate qtd head fields
+	curr_qtd_head->device_address = device;
+	curr_qtd_head->endpoint = endpoint;
+	curr_qtd_head->endpoint_speed = EPS_HIGH_SPEED;
+	curr_qtd_head->data_toggle = 1;
+	curr_qtd_head->H = reclamation;
+	curr_qtd_head->max_packet_length = _MAX_PACKET_LENGTH;
 	
-	curr_qtd_head->endpoint_char |= _MAX_PACKET_LENGTH << MAX_PACKET_LENGTH_OFFSET;
-	curr_qtd_head->endpoint_char |= EPS_HIGH_SPEED;	
-	curr_qtd_head->endpoint_char |= endpoint << ENDPOINT_NUMBER_OFFSET;
-	curr_qtd_head->endpoint_char |= device << DEVICE_ADDRESS_OFFSET;
-	curr_qtd_head->endpoint_char |= (uint32_t)1 << 14;
-	curr_qtd_head->endpoint_char |= (uint32_t)reclamation << 15;
-	
-	curr_qtd_head->endpoint_char |= (uint32_t)15 << 28;
+	curr_qtd_head->nak_count_reload = 15;
 
-	//Make this not a magic number 
-	curr_qtd_head->endpoint_cap |= (1 << 30);
+	curr_qtd_head->mult = 1;
 
 	return curr_qtd_head;
 }

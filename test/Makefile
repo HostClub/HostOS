@@ -12,7 +12,7 @@ CFLAGS = -fno-builtin -Wall -Wstrict-prototypes $(CPPFLAGS)
 AS = as
 ASFLAGS =
 
-all: user.o
+all: user.o cakesh.o
 
 .SUFFIXES:>-.S .b
 
