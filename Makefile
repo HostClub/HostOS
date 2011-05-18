@@ -12,9 +12,9 @@
 # User supplied files
 #
 U_C_SRC = kernel/kalloc.c kernel/clock.c kernel/klibc.c kernel/queue.c kernel/process.c kernel/scheduler.c lib/sio.c \
-	  kernel/stack.c kernel/syscall.c kernel/system.c lib/ulibc.c test/user.c
+	  kernel/stack.c kernel/syscall.c kernel/system.c lib/ulibc.c test/user.c test/cakesh.c
 U_C_OBJ = build/kalloc.o build/clock.o build/klibc.o build/queue.o build/process.o build/scheduler.o build/sio.o \
-	  build/stack.o build/syscall.o build/system.o build/ulibc.o build/user.o build/pci.o build/usb_ehci.o build/bsp.o
+	  build/stack.o build/syscall.o build/system.o build/ulibc.o build/user.o build/pci.o build/usb_ehci.o build/bsp.o build/cakesh.o
 U_S_SRC = kernel/klibs.S lib/ulibs.S
 U_S_OBJ = build/klibs.o build/ulibs.o
 U_LIBS	=
@@ -36,7 +36,7 @@ build:
 	cd utils && make
 	cd drivers && make 
 	cd test && make && cp *.o ../build/
-	#cd smp && make && cp *.o ../build/
+	cd smp && make && cp *.o ../build/
 
 BOOT_OBJ = build/bootstrap.b
 BOOT_SRC = boot/bootstrap.S
