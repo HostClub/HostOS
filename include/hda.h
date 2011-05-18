@@ -20,16 +20,21 @@
 #define PCI_AZBARU_L 	0x14
 #define PCI_INTLN_B 	0x3C
 #define PCI_AZCTL_B 	0x40
-
+#define PCI_DEVC_W		0x78
+#define PCI_DEVS_W		0x7A
 
 //
 // HDA Offsets (hda_bar + offset) 
 //
 
 #define HDA_GCTL_L 		0x08
+#define HDA_WAKEEN_W	0x0C
 #define HDA_STATESTS_W 	0x0E
 #define HDA_INTCTL_L 	0x20
 #define HDA_INTSTS_L 	0x24
+
+#define HDA_WALLCLCK_L 	0x30
+#define HDA_SSYNC_L		0x34
 
 #define HDA_CORBLBASE_L 0x40
 #define HDA_CORBUBASE_L 0x44
@@ -44,6 +49,8 @@
 #define HDA_IC_L 		0x60
 #define HDA_IR_L 		0x64
 #define HDA_IRS_W 		0x68
+
+#define HDA_DPLBASE_L	0x70
 
 #define HDA_IS0CTLSTS_L 0x80
 #define HDA_IS0PIB_L 	0x84
@@ -70,8 +77,10 @@
 struct _hda_bdl_entry
 {
 	uint32_t bd_address; //LSB must be 0
-	uint32_t bd_control_length;
-};
+	uint32_t bd_address_upper; //MUST BE ALL 0's
+	uint32_t bd_length;
+	uint32_t bd_ioc;	//must be 0 OR 1
+}__attribute__((packed));
 
 
 //
@@ -80,10 +89,12 @@ struct _hda_bdl_entry
 
 struct _pci_dev * hda_dev;
 
-uint8_t * hda_bar;
+uint32_t  hda_bar;
+uint32_t  dma_bar;
+uint8_t	  hda_intln;
 
-uint32_t* corb_bar;
-uint32_t* rirb_bar;
+uint32_t * corb_bar;
+uint32_t * rirb_bar;
 struct _hda_bdl_entry * isd_bdl_bar;
 struct _hda_bdl_entry * osd_bdl_bar;
 
@@ -92,6 +103,6 @@ struct _hda_bdl_entry * osd_bdl_bar;
 //
 
 void _hda_init(void);
-
+uint32_t _hda_imm_command( uint8_t cad, uint8_t nid, uint16_t vid, uint8_t payload);
 
 #endif

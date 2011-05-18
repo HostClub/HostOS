@@ -272,9 +272,7 @@ void _kalloc_init( void ){
 	
 	c_printf("End %x %x\n" , _end , &_end);
 	
-	//TODO UNCOMMENT THIS
-	//for( addr = (volatile int *)&_end;
-	  for( addr = &_end; 
+	for( addr = (volatile int *)&_end;
 	    addr <= (volatile int *)0xd0000000;
 	    addr += increment ){
 		/*

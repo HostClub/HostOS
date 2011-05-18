@@ -14,8 +14,9 @@
 
 #include "user.h"
 
-
+#include "hda.h"
 #include "pci.h"
+
 /*
 ** USER PROCESSES
 **
@@ -687,6 +688,8 @@ void user_pci_test( void ) {
 	{
 		c_puts( "Couldn't find audio device\n");
 	}
+
+	_hda_init();
 	
 	c_puts( "User PCI_Test exiting\n" );
 
