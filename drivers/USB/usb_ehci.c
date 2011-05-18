@@ -3,7 +3,7 @@
 #include "ulib.h"
 #include "support.h"
 #include "x86arch.h"
-#include "kalloc.h"
+#include "mm.h"
 
 #include "usb_ehci_defs.h"
 
@@ -484,7 +484,7 @@ struct _qtd * _create_qtd(uint32_t next , uint8_t toggle , uint32_t bytes_to_tra
 	c_puts("Creating new qtd\n");
 #endif
 
-	struct _qtd * curr_qtd = _kalloc_align(sizeof(struct _qtd) , 32);
+	struct _qtd * curr_qtd = (struct _qtd *)(kalloc(sizeof(struct _qtd) , 0 , 1));
 
 #ifdef USB_EHCI_DEBUG
 	c_printf("Current qtd %x\n" , curr_qtd);
@@ -544,7 +544,7 @@ struct _qtd * _create_setup_qtd(uint32_t next , uint8_t toggle , uint32_t bytes_
 void _alloc_qtd_buffer(struct _qtd * curr_qtd , uint32_t buffer_size)
 {
 	//Allocate a full buffer, probably not neccesary
-	struct _echi_request * buffer = _kalloc_align(4096 , 4096);
+	struct _echi_request * buffer = (struct _ehci_request *)(kalloc(4096 , 0 , 1));
 
 	memset(buffer , 0 , 4096);
 
@@ -620,7 +620,7 @@ struct _qtd_head * _create_qtd_head(uint32_t next , int device , int endpoint , 
 	c_puts("Creating new qtd_head\n");
 #endif
 	//Need to be 32 byte aligned
-	struct _qtd_head * curr_qtd_head = _kalloc_align(sizeof(struct _qtd_head) , 32);
+	struct _qtd_head * curr_qtd_head = (struct _qtd_head *)(kalloc(sizeof(struct _qtd_head) , 0 , 1));
 
 	memset(curr_qtd_head , 0 , sizeof(struct _qtd_head));
 

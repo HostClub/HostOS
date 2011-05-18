@@ -78,3 +78,42 @@ void memset(void * loc , int value , int num_bytes)
 	}
 }
 
+char * split(char * buffer , char split_on)
+{
+	char * split_pos = buffer;
+
+	int index = 0;
+
+	while(split_pos[index] != '\0')
+	{
+
+		if(split_pos[index] == split_on)
+		{
+			split_pos[index] = '\0';
+			break;
+		}
+
+		index++;
+	}
+	
+	index++;
+
+	return split_pos + index;
+}
+
+int strcmp(char * first , char * second)
+{
+	while(*first != '\0' && *second != '\0')
+	{
+		if(*first != *second)
+		{
+			return 0;
+		}
+
+		first++;
+		second++;
+	}
+
+	return *first == '\0' && *second == '\0';
+}
+

@@ -244,6 +244,8 @@ uint32_t get_ebp( void );
 
 void memset(void * loc , int value , int num_bytes);
 
+char * split(char * buffer , char split_on);
+
 
 #endif
 

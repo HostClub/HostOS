@@ -67,7 +67,7 @@ void cakesh(void)
 
 void load_process(char * program_name , void (* function_pointer)(char * args))
 {
-	struct _shell_proc * next_program = _kalloc(sizeof(struct _shell_proc));
+	struct _shell_proc * next_program = (struct _shell_proc *)kalloc(sizeof(struct _shell_proc) , 0 , 0);
 	next_program->program_name = program_name;
 	next_program->function_pointer = function_pointer;
 	next_program->next = NULL;

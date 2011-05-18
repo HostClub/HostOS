@@ -1,7 +1,7 @@
 #include "pci.h"
 #include "startup.h"
 #include "c_io.h"
-#include "kalloc.h"
+#include "mm.h"
 #include "usb_ehci.h"
 #include "ulib.h"
 
@@ -70,7 +70,7 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 				
 
 			
-				device = (struct _pci_dev *)_kalloc(sizeof(struct _pci_dev));
+				device = (struct _pci_dev *)kalloc(sizeof(struct _pci_dev) , 0 , 0);
 
 				//check if malloc fails
 				if( device == NULL ){
@@ -89,7 +89,7 @@ uint32_t  _pci_list(struct _pci_bus * bus)
 					c_printf( "Found a new PCI-to-PCI bus!\n" );
 
 					//Handle PCItoPCI bus
-					child = (struct _pci_bus *)_kalloc(sizeof(struct _pci_bus));
+					child = (struct _pci_bus *)kalloc(sizeof(struct _pci_bus) , 0 , 0);
 
 					//Handle kalloc failing
 					if( child == NULL ){}
