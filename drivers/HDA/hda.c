@@ -121,11 +121,7 @@ void _hda_init(void)
 
 	//CAN WE EVEN BEEP????
 	c_printf( "Audio Function Capabilities: %x\n",_hda_imm_command_8(2, 1, 0xF00, 0x08));	
-	_hda_print_connection_select();
-	_hda_print_power_state(2);
 	
-	_hda_amplifier_unmute_all();
-	_hda_pins_output_all();
 	_hda_imm_command_8(2, 1, 0x717, 7);
 	_hda_imm_command_8(2, 1, 0x716, 7);
 	_hda_imm_command_8(2, 1, 0x70E, 1);
@@ -185,18 +181,18 @@ void _hda_init(void)
 
 	c_printf( "SSYNC= %x\n", ((uint32_t*)(hda_bar + HDA_SSYNC_L))[0] );
 	
-	while(1){
-		sleep(1000);
-		c_printf( "PCI Dev C & S= %x\n", _pci_config_read_word(0, 27, 0, PCI_DEVC_W) );
-		c_printf( "PCI AZCTL= %x\n", _pci_config_read_word(0, 27, 0, PCI_AZCTL_B) & 0xFF);
-		c_printf( "Interrupt Status= %x\n", ((uint32_t*)(hda_bar + HDA_INTSTS_L))[0]);
-		c_printf( "Position in input buffer = %x\n", ((uint32_t*)(hda_bar + HDA_IS0PIB_L))[0]);
-		c_printf( "LVI in input buffer = %x\n", ((uint16_t*)(hda_bar + HDA_IS0LVI_W))[0]);
-		c_printf( "Input CTL STS = %x\n", ((uint32_t*)(hda_bar + HDA_IS0CTLSTS_L))[0] );
-		c_printf( "Sample at head of buffer 1= %x\n", ((uint32_t*)(isd_bdl_bar->bd_address ))[0] );
-		c_printf( "Wall clock = %x\n", ((uint32_t*)(hda_bar + HDA_WALLCLCK_L))[0]);
-	
-	}
+//	while(1){
+//		sleep(1000);
+//		c_printf( "PCI Dev C & S= %x\n", _pci_config_read_word(0, 27, 0, PCI_DEVC_W) );
+//		c_printf( "PCI AZCTL= %x\n", _pci_config_read_word(0, 27, 0, PCI_AZCTL_B) & 0xFF);
+//		c_printf( "Interrupt Status= %x\n", ((uint32_t*)(hda_bar + HDA_INTSTS_L))[0]);
+//		c_printf( "Position in input buffer = %x\n", ((uint32_t*)(hda_bar + HDA_IS0PIB_L))[0]);
+//		c_printf( "LVI in input buffer = %x\n", ((uint16_t*)(hda_bar + HDA_IS0LVI_W))[0]);
+//		c_printf( "Input CTL STS = %x\n", ((uint32_t*)(hda_bar + HDA_IS0CTLSTS_L))[0] );
+//		c_printf( "Sample at head of buffer 1= %x\n", ((uint32_t*)(isd_bdl_bar->bd_address ))[0] );
+//		c_printf( "Wall clock = %x\n", ((uint32_t*)(hda_bar + HDA_WALLCLCK_L))[0]);
+//	
+//	}
 	
 
     c_puts("Completed Audio Initialization\n");	
@@ -281,40 +277,4 @@ void _hda_reset_codec( uint8_t cid ){
 
 }
 
-void _hda_amplifier_unmute_all(){
 
-	int i = 0;
-
-	for(i = 0x08; i <= 0x1B; i++){
-
-		_hda_imm_command_16(2, i, 0x3, 0xB07F);
-
-	}
-
-}
-
-void _hda_pins_output_all(){
-
-	int i = 0;
-
-	for(i = 0x14; i <= 0x1F; i++){
-
-		_hda_imm_command_8(2, i, 0x707, 0xC5);
-
-	}
-
-}
-
-void _hda_print_connection_select(){
-
-	int i = 0;
-	for( i = 0x14; i < 0x1C; i++){
-		c_printf("Widget %d has connection index %x\n", i, _hda_imm_command_8(2, i, 0xF01, 0));
-	}	
-
-}
-
-void _hda_print_power_state( uint8_t cid){
-
-	c_printf("AFG has power status %x\n",  _hda_imm_command_8(cid, 1, 0xA, 0));
-}

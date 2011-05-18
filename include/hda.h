@@ -108,8 +108,4 @@ uint32_t _hda_imm_command_8( uint8_t cad, uint8_t nid, uint16_t vid, uint8_t pay
 uint32_t _hda_imm_command_16( uint8_t cad, uint8_t nid, uint8_t vid, uint16_t payload);
 static void _isr_hda( int vector, int code );
 void _hda_reset_codec( uint8_t cid );
-void _hda_amplifier_unmute_all();
-void _hda_pins_output_all();
-void _hda_print_connection_select();
-void _hda_print_power_state(uint8_t cid);
 #endif
