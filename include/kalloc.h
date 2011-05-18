@@ -29,7 +29,7 @@
 ** General (C and/or assembly) definitions
 */
 
-#define	WORD_SIZE		sizeof(int)
+#define	WORD_SIZE		sizeof(uint32_t)
 #define	LOG2_OF_WORD_SIZE	2
 
 #ifndef __ASM__20093__
@@ -78,6 +78,8 @@ extern	blockinfo_t	*_freelist;	/* First free block in the system */
 **		NULL if no block was found)
 */
 void	*_kalloc( uint_t desired_length );
+
+void 	*_kalloc_align(uint_t desired_length , uint32_t alignment);
 
 /*
 ** Name:	_kfree

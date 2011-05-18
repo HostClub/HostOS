@@ -16,6 +16,8 @@
 
 
 #include "pci.h"
+#include "cakesh.h"
+
 /*
 ** USER PROCESSES
 **
@@ -933,11 +935,21 @@ void init( void ) {
 #endif
 */
 
-	/*
-	** New Test Functions
-	*/
+/*
+	
+	c_puts("Spawning CAKESH\n");
+	pid = fork();
+	if( pid < 0 ) {
+		c_puts( "init: can't fork() CAKESH\n" );
+	} else if( pid == 0 ) {
+		exec( PRIO_STANDARD, cakesh );
+		c_puts( "init: can't exec CAKESH\n" );
+		exit( X_FAILURE );
+	}
+*/
 
 #ifdef SPAWN_PCI_TEST
+	c_puts("Spawning PCI_TEST\n");
 	pid = fork();
 	if( pid < 0 ) {
 		c_puts( "init: can't fork() user PCI_TEST\n" );

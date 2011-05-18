@@ -289,9 +289,10 @@ void _init( void ) {
 
 	c_puts( "\n" );
 
-	checkCPUs();
+	c_puts(" Ending init\n");
+	//checkCPUs();
 
-	__panic("SSSSSSSSHHHHIIIIIIIIITTT");
+	//__panic("SSSSSSSSHHHHIIIIIIIIITTT");
 
 	/*
 	** Create the initial system ESP
