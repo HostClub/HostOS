@@ -295,12 +295,12 @@ void _init( void ) {
 	_syscall_init();
 	_sched_init();
 	_clock_init();
-  _paging_init();
+	_paging_init();
 
 	c_puts( "\n" );
 
 	c_puts(" Ending init\n");
-	//checkCPUs();
+	checkCPUs();
 
 	//__panic("SSSSSSSSHHHHIIIIIIIIITTT");
 	/*
