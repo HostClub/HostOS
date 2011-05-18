@@ -6,7 +6,7 @@ struct _shell_proc
 	void (* function_pointer)(char * arguements);
 };
 
-void cakesh();
+void cakesh(void);
 
 void load_function(char * program_name , void (* function_pointer)(char * arguements));
 

@@ -295,6 +295,7 @@ void _init( void ) {
 	_syscall_init();
 	_sched_init();
 	_clock_init();
+	_pci_init();
   _paging_init();
 
 	c_puts( "\n" );

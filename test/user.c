@@ -938,7 +938,7 @@ void init( void ) {
 #endif
 */
 
-/*
+
 	
 	c_puts("Spawning CAKESH\n");
 	pid = fork();
@@ -949,8 +949,8 @@ void init( void ) {
 		c_puts( "init: can't exec CAKESH\n" );
 		exit( X_FAILURE );
 	}
-*/
 
+/*
 #ifdef SPAWN_PCI_TEST
 	c_puts("Spawning PCI_TEST\n");
 	pid = fork();
@@ -962,7 +962,7 @@ void init( void ) {
 		exit( X_FAILURE );
 	}
 #endif
-
+*/
 
 
 	writec( '!' );

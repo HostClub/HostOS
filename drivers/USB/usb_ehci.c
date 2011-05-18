@@ -177,7 +177,7 @@ void usb_ehci_init(struct _pci_dev * device)
 
 	c_printf("USBINTR %x\n" , *_USBINTR);
 
-	while(1)
+	/*while(1)
 	{
 		sleep(1000);
 
@@ -228,7 +228,7 @@ void usb_ehci_init(struct _pci_dev * device)
 				c_printf("Current QTD Head %x\n" , head);
 
 				print_qtd_head(head);
-				/*
+				
 				*_ASYNCLISTADDR = head;
 
 				*_USBCMD |= ASYNC_ENABLE;
@@ -244,7 +244,7 @@ void usb_ehci_init(struct _pci_dev * device)
 
 				sleep(1000);
 				c_printf("USBCMD %x\n" , *_USBCMD);
-				*/
+				
 
 				struct _qtd_head * setup  = _create_blank_qtd(port_index , 1);
 
@@ -273,7 +273,7 @@ void usb_ehci_init(struct _pci_dev * device)
 			}
 		}
 
-	}
+	}*/
 
 }
 
