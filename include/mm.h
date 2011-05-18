@@ -28,13 +28,16 @@
  * Start of C-only definitions
  */
 
+#define HEAP_SIZE 0x1000000
+#define MEM_START 0x11F000
+
+
 /*
  * Prototypes
  */
 
 //used Doug Lea's (GNU library, also nearby ACM holder) malloc as a reference
 typedef struct malloc_chunk {
-  uint32_t             used;      //0 if free, x space used 
   uint32_t             prev_foot; //size of the previous chunk
   uint32_t             head;      //size of this chunk
   struct malloc_chunk *fnext;     //used if free chunk
@@ -55,6 +58,9 @@ void kfree( void *p );
 heap_t *_heap_init(void);
 
 void *_halloc(heap_t *h, uint32_t size, int p_align);
+
+void coalesce(uint32_t new_head, chunk_t** m1, chunk_t** m2, chunk_t** m3);
+
 
 void _hfree(void *p, heap_t *h_ptr);
 

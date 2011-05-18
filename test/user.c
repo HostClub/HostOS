@@ -706,21 +706,18 @@ void init( void ) {
 
   c_puts("alloc ");
   uint32_t z = (uint32_t)kalloc(8, 0, 0);
-  c_printf("z: 0x%x", z);
-
-  heap_t *heap = _heap_init();
-  c_puts( "heap started?\n" );
+  c_printf("z: 0x%x\n", z);
 
   c_puts( "alloc " );
-  uint32_t a = (uint32_t)_halloc(heap, 8, 0);
+  uint32_t a = (uint32_t)kalloc(8, 0, 0);
   c_printf("a: 0x%x\n", a);
 
   c_puts( "free a\n" );
-  _hfree(&a, heap);
+  kfree((void*)a);
 
   
   c_puts( "alloc " );
-  uint32_t d = (uint32_t)_halloc(heap, 8, 0);
+  uint32_t d = (uint32_t)kalloc(8, 0, 0);
   c_printf("d: 0x%x\n", d);
   
 
@@ -965,8 +962,8 @@ void init( void ) {
 	
 	** SHOULD NEVER REACH HERE
 	
-*/
+
 	c_printf( "*** INIT IS EXITING???\n" );
 	exit( X_FAILURE );
-
+*/
 }

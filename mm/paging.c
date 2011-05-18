@@ -9,12 +9,12 @@
 //#define PHYS_MEM_SIZE 0x100000000
 // 16MB
 #define PHYS_MEM_SIZE 0x1000000
-#define PAGE_SIZE 0x1000
 #define TABLE_SIZE 1024
 #define SIZE 32
 #define OFFSET(a) (a%SIZE)
 #define INDEX(a) (a/SIZE)
 #define INT_PAGE_FAULT 14
+#define PAGE_ENABLE 0x80000000
 #define PAGE_PRESENT(a) (a&0x1)
 #define PAGE_RW(a) (a&0x2)
 #define PAGE_USER(a) (a&0x4)
@@ -27,6 +27,7 @@ extern uint32_t* frame_loc;
 extern uint32_t total_frames;
 page_dir_t *base_dir = 0;
 page_dir_t *cur_dir = 0;
+extern heap_t* base_heap;
 
 void _paging_init(){
   c_puts("paging ");
@@ -50,10 +51,19 @@ void _paging_init(){
   c_printf("basedir %d\n", base_dir);
 
   int i = 0;
+  for(i=MEM_START; i < MEM_START + HEAP_SIZE; i += PAGE_SIZE){
+    get_page(i, 1, base_dir);
+  }
+
+  i=0;
   c_puts("loop fllocing the pages\n");
-  while( i < alloc_addr) {
+  while( i < alloc_addr + PAGE_SIZE) {
     falloc( get_page (i, 1, base_dir), 0, 0);
     i+=PAGE_SIZE;
+  }
+
+  for(i=MEM_START; i < MEM_START + HEAP_SIZE; i += PAGE_SIZE){
+    falloc(get_page (i, 1, base_dir), 0, 0);
   }
 
   //TODO: page fault  turn on intterupt
@@ -65,6 +75,8 @@ void _paging_init(){
   move_page_dir(base_dir);
 
   c_puts("GOOO...?\n");
+
+  base_heap = _heap_init();
 }
 
 //basically got this code from the osdev wiki on paging
@@ -76,7 +88,7 @@ void move_page_dir(page_dir_t *new){
   uint32_t cr0;
   c_puts("Hold.....\n");
   asm volatile("mov %%cr0, %0": "=b"(cr0));
-  cr0 |= 0x80000000;
+  cr0 |= PAGE_ENABLE;
   c_puts("Hold.................\n");
   asm volatile("mov %0, %%cr0":: "b"(cr0));
 } 

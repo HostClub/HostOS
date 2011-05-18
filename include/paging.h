@@ -7,6 +7,7 @@
 #ifndef __ASM__20093__
 
 // need includes
+#define PAGE_SIZE 0x1000
 
 //read the readme of the layout of the pages
 typedef struct page {
