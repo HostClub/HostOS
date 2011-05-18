@@ -14,6 +14,7 @@
 
 #include "user.h"
 #include "paging.h"
+#include "mm.h"
 
 /*
 ** USER PROCESSES
@@ -696,15 +697,34 @@ void idle( void ) {
 */
 
 void init( void ) {
-	pid_t pid;
-	info_t info;
+	//pid_t pid;
+	//info_t info;
 
 	c_puts( "Init started\n" );
 
-	//writec( '$' );
+	writec( '$' );
+
+  c_puts("alloc ");
+  uint32_t z = (uint32_t)kalloc(8, 0, 0);
+  c_printf("z: 0x%x", z);
+
+  heap_t *heap = _heap_init();
+  c_puts( "heap started?\n" );
+
+  c_puts( "alloc " );
+  uint32_t a = (uint32_t)_halloc(heap, 8, 0);
+  c_printf("a: 0x%x\n", a);
+
+  c_puts( "free a\n" );
+  _hfree(&a, heap);
+
+  
+  c_puts( "alloc " );
+  uint32_t d = (uint32_t)_halloc(heap, 8, 0);
+  c_printf("d: 0x%x\n", d);
   
 
-  c_puts( "paging init started, really?\n");
+ // c_puts( "paging init started, really?\n");
 
 //  uint32_t *ptr = (uint32_t*)0xA0000000;
 //  uint32_t thisshouldfault = *ptr;
@@ -717,7 +737,7 @@ void init( void ) {
   /*
 	** Always start the idle process first
 	*/
-
+/*
 	pid = fork();
 	if( pid < 0 ) {
 		c_puts( "init: can't fork() idle\n" );
@@ -928,11 +948,11 @@ void init( void ) {
 
 	writec( '!' );
 
-	/*
+	
 	** At this point, we go into an infinite loop
 	** waiting for our children (direct, or inherited)
 	** to exit.
-	*/
+	
 
 	for(;;) {
 		info.pid = 0;	// wait for anyone
@@ -942,10 +962,10 @@ void init( void ) {
 		// sleep( SECONDS_TO_TICKS(5) );
 	}
 
-	/*
+	
 	** SHOULD NEVER REACH HERE
-	*/
-
+	
+*/
 	c_printf( "*** INIT IS EXITING???\n" );
 	exit( X_FAILURE );
 

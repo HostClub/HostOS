@@ -50,6 +50,14 @@ typedef struct heap {
 
 uint32_t kalloc(uint32_t size, uint32_t *phys_addr, uint32_t aligned);
 
+void kfree( void *p );
+
+heap_t *_heap_init(void);
+
+void *_halloc(heap_t *h, uint32_t size, int p_align);
+
+void _hfree(void *p, heap_t *h_ptr);
+
 #endif
 
 #endif
