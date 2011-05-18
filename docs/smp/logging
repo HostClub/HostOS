@@ -1,0 +1,29 @@
+log.c
+=====
+
+These functions allow for dynamically customizable logging messages to be printed to
+the console. There are four levels of debugging: debug, info, warning, and error.
+The debuging level can be changed on the fly by calling setDebugLevel.
+
+debug
+-----
+
+Used for printing the most verbose messages.
+
+
+info
+----
+
+Used for printing configuration information to the user.
+
+
+warn
+----
+
+Used to warn the user of potential problems with configuration or execution.
+
+
+error
+-----
+
+Used to inform the user of non-halting critical errors.

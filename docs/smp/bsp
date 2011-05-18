@@ -1,0 +1,17 @@
+bsp.c
+=====
+
+The functions for determining processor information, setting up SMP, and actually
+booting application processors are contained within this file.
+
+The main function in this file is initSMP(). This is the only function you should
+call from outside the file. The headers don't enforce this restriction so you need
+to be careful.
+
+
+initSMP()
+---------
+
+This sets up and starts up all of the available cores on the CPU. When these
+come online, the trampoline sets them up to run with the rest of the system and
+holds them in a waiting state.
