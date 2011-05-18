@@ -4,6 +4,7 @@
 #include "log.h"
 #include "structs.h"
 #include "mm.h"
+#include "cakesh.h"
 
 #define DEBUG_LEVEL DL_DEBUG
 
@@ -240,7 +241,8 @@ void initSMP() {
 
 	setDebugLevel(l_info);
 
-	info("%d\n", cpu_count);
+	load_process("cacheinfo", cache_info);
+
 	if (cpu_count == -1) {
 		error("Error while checking number of CPUs\n");
 		return;
@@ -248,7 +250,7 @@ void initSMP() {
 
 	cpus_t *cpus = (cpus_t *)kalloc(sizeof(cpus_t), 0, 0);
 	cpus->online_count = 0;
-	cpus->total_count = cpu_count + 1;
+	cpus->total_count = cpu_count;
 	cpus->infos = (cpu_info_t *)kalloc(sizeof(cpu_info_t *) * cpu_count, 0, 0);
 
 

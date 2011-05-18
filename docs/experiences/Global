@@ -10,3 +10,19 @@ Paging:
   I think if I had a week more I could get a lot more done, and basically
   this has been a lesson in get your work done before you optimize for me.
   Also look for stupid bugs before complicated ones
+
+SMP:
+  I ended up learning so much about every aspect of this project. Myqe and I wrote
+  the entire build system for the OS. This took a lot longer than expected mainly
+  because the two of us are apparently very bad at make. I ended up reading more into
+  make recipes and rewrote a few of the module-specific makefiles (lib, smp, and
+  boot).
+  During the process of learning how to do SMP, I ended up learning about a number
+  of tools like qemu, gdb, and objdump. Using qemu with the built in gdbserver was
+  invaluable. I really wish I had known about that from the start. I would encourage
+  all future students to use this setup.
+  Most of the issues I got hung up on were issues with the x86 processor. It was
+  very frustrating to debug many of the issues when I couldn't tell what was even
+  going on. Qemu REALLY helped with this.
+  I've had a lot of trouble (as you know) with assembly issues. I can only
+  attribute these issues to the tools being open source.
