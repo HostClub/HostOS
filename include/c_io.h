@@ -124,6 +124,15 @@ void c_puts( char *str );
 void c_printf( char *fmt, ... );
 
 /*
+** Name:	c_vprintf
+**
+** Description:	Limited form of vprintf (see the beginning of this file for
+**		a list of what is implemented).
+** Arguments:	printf-style format and optional values
+*/
+void c_vprintf( char **fmt );
+
+/*
 ** Name:	c_scroll
 **
 ** Description:	Scroll the scrolling region up by the given number of lines.

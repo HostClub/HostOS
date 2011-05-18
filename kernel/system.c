@@ -237,6 +237,15 @@ void _zombify( pcb_t *pcb ) {
 
 }
 
+
+void _ap_init( void ) {
+	//*((int *)0x9000) = 11;
+	//c_io_init();
+	c_puts( "AP INIT" );
+
+	while (1);
+}
+
 /*
 ** _init - system initialization routine
 **
@@ -286,9 +295,10 @@ void _init( void ) {
 
 	c_puts( "\n" );
 
-	checkCPUs();
+	c_puts( "Starting application processors\n" );
 
-	__panic("SSSSSSSSHHHHIIIIIIIIITTT");
+	initSMP();
+
 
 	/*
 	** Create the initial system ESP

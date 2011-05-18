@@ -1,5 +1,14 @@
 #include "headers.h"
 #include "bsp.h"
+#include "trampoline.h"
+#include "log.h"
+#include "kalloc.h"
+#include "structs.h"
+
+#define DEBUG_LEVEL DL_DEBUG
+
+LAPIC_t *local_apic;
+mutex_t *processor_started = (mutex_t *)STARTUP_MUTEX;
 
 void inline write_eflags(uint32_t a) {
 	asm("push  %%eax;\
@@ -46,6 +55,14 @@ void inline unscramble_cpuid(uint32_t *data) {
 	data[2] ^= data[3];
 }
 
+uint8_t inline get_lapic_version(LAPIC_t* lapic) {
+	return (lapic->versionLVT & 0xFF);
+}
+
+uint8_t inline get_lapic_maxLVT(LAPIC_t* lapic) {
+	return ((lapic->versionLVT >> 16) & 0xFF);
+}
+
 void strncpy(char *src, char *dst, int len) {
 	dst[len] = 0;
 	while (len--) {
@@ -53,16 +70,24 @@ void strncpy(char *src, char *dst, int len) {
 	}
 }
 
+
+/*
+** This is used to find the MP Floating Pointer Structure on machines that
+** follow Intel's MP Spec. It returns a pointer to a stucture that is
+** overlayed onto the actual MPFP structure in memory.
+*/
+
 MPFloatPointer_t *findMPFPS() {
 	//check to see is the extended BIOS data area is defined
 	uint32_t *ebdaBase = (uint32_t *)EBDA_POINTER;
-	c_printf("Checking EBDA base @ 0x%x: 0x%x\n", EBDA_POINTER, *ebdaBase);
+
+	info("Checking EBDA base @ 0x%x: 0x%x\n", EBDA_POINTER, *ebdaBase);
 	if (ebdaBase) {
 		//search for the floating pointer structure in the extended BIOS data area
 		*ebdaBase = *ebdaBase << 4;
-		c_printf("EBDA defined to be: 0x%x\n", *ebdaBase);
+		info("EBDA defined to be: 0x%x\n", *ebdaBase);
 		uint32_t *loc = (uint32_t *)*ebdaBase;
-		c_printf("Checking the EBDA between 0x%x and 0x%x\n", loc, *ebdaBase + 0x0400 - 4);
+		info("Checking the EBDA between 0x%x and 0x%x\n", loc, *ebdaBase + 0x0400 - 4);
 		while ((uint32_t)loc < *ebdaBase + 0x0400 - 4) {
 			//c_putchar(*loc);
 			if (*loc == MP_SIG) {
@@ -72,12 +97,11 @@ MPFloatPointer_t *findMPFPS() {
 		}
 	} else {
 		//search for the structure in the last 1KB of system base memory
-		c_printf("No EBDA defined\n");
-
+		info("No EBDA defined\n");
 	}
 
 
-	c_printf("Checking the BIOS ROM (0x%x - 0x%x)\n", BIOSROM_LOW, BIOSROM_HIGH);
+	info("Checking the BIOS ROM (0x%x - 0x%x)\n", BIOSROM_LOW, BIOSROM_HIGH);
 	//search for the structure in BIOS ROM
 	uint32_t *loc = (uint32_t *)BIOSROM_LOW;
 	while ((uint32_t)loc < BIOSROM_HIGH - 4) {
@@ -88,14 +112,14 @@ MPFloatPointer_t *findMPFPS() {
 	}
 
 	uint32_t *topMem = (uint32_t *)TOPOFMEM_POINTER;
-	c_printf("Checking top of memory pointer @ 0x%x: 0x%x\n", TOPOFMEM_POINTER, *topMem);
+	info("Checking top of memory pointer @ 0x%x: 0x%x\n", TOPOFMEM_POINTER, *topMem);
 	if (topMem) {
 		//search for the floating pointer structure in the extended BIOS data area
 		//(*topMem)++;
 		(*topMem) *= 1024;
-		c_printf("Top of memory defined to be: 0x%x\n", *topMem);
+		info("Top of memory defined to be: 0x%x\n", *topMem);
 		uint32_t *loc = (uint32_t *)*topMem;
-		c_printf("Checking the top of memory between 0x%x and 0x%x\n", loc, *topMem + 0x0400 - 4);
+		info("Checking the top of memory between 0x%x and 0x%x\n", loc, *topMem + 0x0400 - 4);
 		while ((uint32_t)loc < *topMem + 0x0400 - 4) {
 			//c_putchar(*loc);
 			if (*loc == MP_SIG) {
@@ -105,7 +129,7 @@ MPFloatPointer_t *findMPFPS() {
 		}
 	}
 
-	c_printf("Checking the default top of memory (0x%x - 0x%x)\n", DEFAULT_TOPOFMEM, DEFAULT_TOPOFMEM - 1024);
+	info("Checking the default top of memory (0x%x - 0x%x)\n", DEFAULT_TOPOFMEM, DEFAULT_TOPOFMEM - 1024);
 	//search for the structure in BIOS ROM
 	loc = (uint32_t *)DEFAULT_TOPOFMEM - 1024;
 	while ((uint32_t)loc < DEFAULT_TOPOFMEM - 4) {
@@ -118,9 +142,108 @@ MPFloatPointer_t *findMPFPS() {
 	return NULL;
 }
 
-void checkCPUs() {
-	uint32_t id;
+
+bool_t startup_CPU(int id) {
+	info("Starting up CPU (id=%d)\n", id);
+	mutex_clear(processor_started);
+
+	IPICommand_t ipi;
+	set_ipi_destination(&ipi, id);
+	set_ipi_shorthand(&ipi, IPI_SHORTHAND_NONE);
+	set_ipi_triggermode(&ipi, IPI_TRIGGER_EDGE);
+	set_ipi_level(&ipi, IPI_LEVEL_ASSERT);
+	set_ipi_destinationmode(&ipi, IPI_DESTMODE_PHYSICAL);
+	set_ipi_deliverymode(&ipi, IPI_DELMODE_INIT);
+	set_ipi_deliverymode(&ipi, IPI_DELMODE_INIT);
+	set_ipi_vector(&ipi, 0);
+
+	send_IPI(&ipi);
+
+	uint32_t a = 0xFFFF0000;
+	while (++a);
+
+	set_ipi_destination(&ipi, id);
+	set_ipi_shorthand(&ipi, IPI_SHORTHAND_NONE);
+	set_ipi_triggermode(&ipi, IPI_TRIGGER_EDGE);
+	set_ipi_level(&ipi, IPI_LEVEL_ASSERT);
+	set_ipi_destinationmode(&ipi, IPI_DESTMODE_PHYSICAL);
+	set_ipi_deliverymode(&ipi, IPI_DELMODE_STARTUP);
+	set_ipi_vector(&ipi, AP_TARGET_ADDRESS >> 12);
+
+
+	a = 0xFFFF0000;
+	send_IPI(&ipi);
+	while (++a);
+
+	a = 0xFFFF0000;
+	send_IPI(&ipi);
+	while (++a);
+
+	a = 0xF0000000;
+	while (++a);
+
+	debug("0x%x\n", *((int *)STARTUP_MUTEX));
+
+	debug("APIC: 0x%x\n", *((int *)0x1B));
+	//debug("TEST: 0x%x\n", *((int *)0x9000));
+
+	//mutex_test_and_set(processor_started);
+
+	bool_t result = mutex_is_set(processor_started);
+	mutex_clear(processor_started);
+
+	if (result) {
+		debug("Started processor (id = %d)\n", id);
+	} else {
+		debug("Could not start processor (id = %d)\n", id);
+	}
+
+	return result;
+}
+
+void startup_cpus(cpus_t *cpus) {
 	int i;
+
+	for (i = 1; i < cpus->total_count; i++) {
+		cpus->infos[i].apicID = i;
+
+		/*if (startup_CPU(i)) {
+			cpus->infos[i].state = halted;
+		} else {*/
+			cpus->infos[i].state = offline;
+			error("Could not start processor %d\n", i);
+		//}
+	}
+}
+
+void initSMP() {
+	int cpu_count = checkCPUs();
+
+	if (cpu_count == 0) {
+		error("Error while checking number of CPUs\n");
+		return;
+	}
+
+	cpus_t *cpus = _kalloc(sizeof(cpus_t));
+	cpus->online_count = 0;
+	cpus->total_count = cpu_count;
+	cpus->infos = _kalloc(sizeof(cpu_info_t *) * cpu_count);
+
+
+	build_lapic_info();
+
+	startup_cpus(cpus);
+}
+
+
+/*
+** Checks to see if the processor supports multiple processors.
+** Returns the number of supported processing cores or zero if
+** there was an error.
+*/
+
+uint32_t checkCPUs() {
+	uint32_t id;
 	uint32_t data[5];
 	uint32_t maxCpuIdOp;
 
@@ -130,8 +253,8 @@ void checkCPUs() {
 	id = (id >> 21) & 1;
 
 	if (!id) {
-		c_puts("CPUID not supported!!!\n");
-		return;
+		info("CPUID not supported!!!\n");
+		return 0;
 	}
 
 
@@ -141,44 +264,45 @@ void checkCPUs() {
 	//Null terminate the string
 	data[4] = 0;
 
-	c_printf( "Max CPUID Op: %d\n", maxCpuIdOp );
-	c_printf( "CPU Vendor: '%s'\n", (char *)(data + 1) );
+	info( "Max CPUID Op: %d\n", maxCpuIdOp );
+	info( "CPU Vendor: '%s'\n", (char *)(data + 1) );
 
 	id = cpuid_value(EXT_FUNCS);
 	if (id >= BRAND_STRING3) {
 		//Supports extended functions
 		cpuid_data(BRAND_STRING1, data);
-		c_printf("%s", data);
+		info("%s", data);
 		cpuid_data(BRAND_STRING2, data);
-		c_printf("%s", data);
+		info("%s", data);
 		cpuid_data(BRAND_STRING3, data);
-		c_printf("%s\n", data);
+		info("%s\n", data);
 
 		cpuid_data(EXT_FEATURES, data);
-		c_printf("Extended Features (ECX):  0x%x\n", *((uint32_t *)(data + 8)));
-		c_printf("Extended Features (EDX):  0x%x\n", *((uint32_t *)(data + 12)));
+		info("Extended Features (ECX):  0x%x\n", *((uint32_t *)(data + 8)));
+		info("Extended Features (EDX):  0x%x\n", *((uint32_t *)(data + 12)));
 	} else {
 		//Doesn't support extended functions
 		cpuid_data(FEATURE_INFO, data);
 		unscramble_cpuid(data);
 		id = *((uint32_t *)data) & 0x0FFF3FFF;
 
-		c_printf("Signature:       0x%x (", id);
+		info("Signature:       0x%x (", id);
 		switch (id) {
 			case SIG_I7:
-				c_puts("Core i7 Processor)\n");
+				info("Core i7 Processor)\n");
 				break;
 			case SIG_CORE2:
-				c_puts("Core 2 Extreme Processor)\n");
+				info("Core 2 Extreme Processor)\n");
 				break;
 			default:
-				c_puts("Unknown Processor)\n");
+				info("Unknown Processor)\n");
+				return 0;
 		}
 	}
 
 	cpuid_data(FEATURE_INFO, data);
 	unscramble_cpuid(data);
-	id = *((uint32_t *)data) & 0x0FFF3FFF;
+	id = data[0] & 0x0FFF3FFF;
 
 	char steppingID =     (id & 0x0000000F) >> 0;
 	char modelNumber =    (id & 0x000000F0) >> 4;
@@ -187,49 +311,59 @@ void checkCPUs() {
 	char extendedModel =  (id & 0x000F0000) >> 16;
 	char extendedFamily = (id & 0x0FF00000) >> 20;
 
-	c_printf("Features (ECX): 0x%x\n", *((uint32_t *)data + 8));
-	c_printf("Features (EDX): 0x%x\n", *((uint32_t *)data + 12));
+	info("Features (ECX): 0x%x\n", *((uint32_t *)data + 8));
+	info("Features (EDX): 0x%x\n", *((uint32_t *)data + 12));
 
-	c_printf("Stepping ID:     %d\n", steppingID);
-	c_printf("Model Number:    %d\n", modelNumber);
-	c_printf("Family Code:     %d\n", familyCode);
-	c_printf("Type:            %d\n", type);
-	c_printf("Extended Model:  %d\n", extendedModel);
-	c_printf("Extended Family: %d\n", extendedFamily);
+	info("Stepping ID:     %d\n", steppingID);
+	info("Model Number:    %d\n", modelNumber);
+	info("Family Code:     %d\n", familyCode);
+	info("Type:            %d\n", type);
+	info("Extended Model:  %d\n", extendedModel);
+	info("Extended Family: %d\n", extendedFamily);
 
-	id = *((uint32_t *)(data + 4));
-	c_printf("\nLogical Processors: %d\n", (id & 0x00FF0000) >> 16);
+	id = data[1];
+	info("\nLogical Processors: %d\n", (id & 0x00FF0000) >> 16);
+	return (id & 0x00FF0000) >> 16;
+}
 
 
+/*
+** Prints out basic cpu caching information
+*/
+
+void cache_info() {
 	// Enumerate the deterministic cache parameters
+	uint32_t data[5];
+	uint32_t id;
+
 	cpuid_data_with_param(D_CACHE_PARAM, 0, data);
 	unscramble_cpuid(data);
 
 	id = *((uint32_t *)(data));
-	c_printf("APIC IDs:           %d\n", 1 + ((id & 0xFC000000) >> 26));
+	info("APIC IDs:           %d\n", 1 + ((id & 0xFC000000) >> 26));
 
-	i = 0;
+	int i = 0;
 	while ((id & 0x0F) != 0) {
 		char sharingThreads = ((id & 0x03FFC000) >> 14) + 1;
 		char level = (id & 0xF0) >> 4;
 		char type = (id & 0x0F);
 
-		c_printf("Cache Number: %d   ", i);
-		c_printf("  Threads sharing this cache: %d   ", sharingThreads);
-		c_printf("  Level: %d   ", level);
-		c_printf("  Type: ");
+		info("Cache Number: %d   ", i);
+		info("  Threads sharing this cache: %d   ", sharingThreads);
+		info("  Level: %d   ", level);
+		info("  Type: ");
 		switch (type) {
 			case 1:
-				c_printf("Data");
+				info("Data");
 				break;
 			case 2:
-				c_printf("Instruction");
+				info("Instruction");
 				break;
 			case 3:
-				c_printf("Unified");
+				info("Unified");
 				break;
 			default:
-				c_printf("INVALID");
+				info("INVALID");
 		}
 
 		c_putchar('\n');
@@ -238,41 +372,101 @@ void checkCPUs() {
 		cpuid_data_with_param(D_CACHE_PARAM, i, data);
 		id = *((uint32_t *)(data));
 	}
+}
 
+
+
+void build_lapic_info() {
 	char temp[13];
 
 	MPFloatPointer_t *mpStruct = findMPFPS();
 
 	if (mpStruct) {
-		c_printf("MP Floating Pointer\n");
+		info("MP Floating Pointer\n");
 		strncpy(mpStruct->signature, temp, 4);
-		c_printf("  Signature:     %s\n", temp);
-		c_printf("  Table Address: 0x%x\n", mpStruct->table);
-		c_printf("  Table Length:  0x%x\n", mpStruct->tableLength * 16);
-		c_printf("  Revision:      0x%x\n", mpStruct->specRev);
-		c_printf("  Checksum:      0x%x\n", mpStruct->checksum);
-		c_printf("  Features:      0x%x 0x%x 0x%x 0x%x 0x%x\n", mpStruct->features[0], mpStruct->features[1], mpStruct->features[2], mpStruct->features[3], mpStruct->features[4]);
+		info("  Signature:     %s\n", temp);
+		info("  Table Address: 0x%x\n", mpStruct->table);
+		info("  Table Length:  0x%x\n", mpStruct->tableLength * 16);
+		info("  Revision:      0x%x\n", mpStruct->specRev);
+		info("  Checksum:      0x%x\n", mpStruct->checksum);
+		info("  Features:      0x%x 0x%x 0x%x 0x%x 0x%x\n", mpStruct->features[0], mpStruct->features[1], mpStruct->features[2], mpStruct->features[3], mpStruct->features[4]);
 
-		c_printf("MP Configuration Table\n");
+		info("MP Configuration Table\n");
 		MPConfigTable_t *config = mpStruct->table;
 
 		strncpy(config->signature, temp, 4);
-		c_printf("  Signature:               %s\n", temp);
+		info("  Signature:               %s\n", temp);
 		strncpy(config->oemID, temp, 8);
-		c_printf("  OEM ID:                  %s\n", temp);
+		info("  OEM ID:                  %s\n", temp);
 		strncpy(config->productID, temp, 12);
-		c_printf("  Product ID:              %s\n", temp);
-		c_printf("  Revision:                0x%x\n", config->specRev);
-		c_printf("  Base Table Length:       0x%x\n", config->baseTableLength);
-		c_printf("  Checksum:                0x%x\n", config->checksum);
-		c_printf("  OEM Table Size:          0x%x\n", config->baseTableLength);
-		c_printf("  Entry Count:             %d\n", config->entryCount);
-		c_printf("  Local APIC:              0x%x\n", config->localAPIC);
-		c_printf("  Extended Table Length:   0x%x\n", config->extendedTableLength);
-		c_printf("  Extended Table Checksum: 0x%x\n", config->extendedTableChecksum);
+		info("  Product ID:              %s\n", temp);
+		info("  Revision:                0x%x\n", config->specRev);
+		info("  Base Table Length:       0x%x\n", config->baseTableLength);
+		info("  Checksum:                0x%x\n", config->checksum);
+		info("  OEM Table Size:          0x%x\n", config->baseTableLength);
+		info("  Entry Count:             %d\n", config->entryCount);
+		info("  Local APIC:              0x%x\n", config->localAPIC);
+		info("  Extended Table Length:   0x%x\n", config->extendedTableLength);
+		info("  Extended Table Checksum: 0x%x\n", config->extendedTableChecksum);
+
+		local_apic = (LAPIC_t *)DEFAULT_LAPIC_ADDRESS;
 	} else {
-		c_printf("No MP Floating Pointer Structure Found - Falling back to defaults\n");
-
-
+		warn("No MP Floating Pointer Structure Found - Falling back to defaults\n");
+		local_apic = (LAPIC_t *)DEFAULT_LAPIC_ADDRESS;
 	}
+
+	info("Local APIC\n");
+	info("  ID:      0x%x\n", local_apic->id);
+	info("  Version: 0x%x\n", get_lapic_version(local_apic));
+	info("  Max LVT: 0x%x\n", get_lapic_maxLVT(local_apic));
+	info("  SVR:     0x%x\n", local_apic->svr);
+}
+
+
+void inline send_IPI(IPICommand_t *command) {
+	/*debug("===IPI===\n");
+	debug(" Upper:0x%x\n", command->upper);
+	debug(" Lower:0x%x\n", command->lower);
+	debug("=========\n");*/
+
+	local_apic->icr_hi = command->upper;
+	local_apic->icr_lo = command->lower;
+
+	//while (local_apic->icr_lo & 0x1000) {
+	//	debug("Waiting for send");
+	//}
+}
+
+void set_ipi_destination(IPICommand_t *ipi, uint8_t value) {
+	ipi->upper = value << 24;
+}
+
+void set_ipi_shorthand(IPICommand_t *ipi, uint8_t value) {
+	ipi->lower &= ~0x000C0000;
+	ipi->lower |= (value & 0x03) << 17;
+}
+
+void set_ipi_triggermode(IPICommand_t *ipi, uint8_t value) {
+	ipi->lower &= ~0x00008000;
+	ipi->lower |= (value & 0x01) << 15;
+}
+
+void set_ipi_level(IPICommand_t *ipi, uint8_t value) {
+	ipi->lower &= ~0x00004000;
+	ipi->lower |= (value & 0x01) << 14;
+}
+
+void set_ipi_destinationmode(IPICommand_t *ipi, uint8_t value) {
+	ipi->lower &= ~0x00000800;
+	ipi->lower |= (value & 0x01) << 11;
+}
+
+void set_ipi_deliverymode(IPICommand_t *ipi, uint8_t value) {
+	ipi->lower &= ~0x00000700;
+	ipi->lower |= (value & 0x07) << 8;
+}
+
+void set_ipi_vector(IPICommand_t *ipi, uint8_t value) {
+	ipi->lower &= ~0x000000FF;
+	ipi->lower |= value;
 }

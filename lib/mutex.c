@@ -3,23 +3,21 @@
 #define SET 0
 #define CLEAR 1
 
-bool_t is_set(mutex_t *mutex) {
+bool_t mutex_is_set(mutex_t *mutex) {
 	return (*mutex == SET);
 }
 
-void test_and_set(mutex_t *mutex) {
+void mutex_test_and_set(mutex_t *mutex) {
 	asm("LOCK:\
-	         xor %%eax, %%eax;\
 	         xchg %%eax, (%%ebx);\
 	         and %%eax, %%eax;\
 	         jz LOCK;"
-	    : "=b"(mutex)
 	    :
-		: "%eax"
+	    : "b"(mutex), "a"(SET)
 	   );
 }
 
-void clear(mutex_t *mutex) {
+void mutex_clear(mutex_t *mutex) {
 	*mutex = CLEAR;
 }
 

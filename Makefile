@@ -14,7 +14,7 @@
 U_C_SRC = kernel/kalloc.c kernel/clock.c kernel/klibc.c kernel/queue.c kernel/process.c kernel/scheduler.c lib/sio.c \
 	  kernel/stack.c kernel/syscall.c kernel/system.c lib/ulibc.c test/user.c
 U_C_OBJ = build/kalloc.o build/clock.o build/klibc.o build/queue.o build/process.o build/scheduler.o build/sio.o \
-	  build/stack.o build/syscall.o build/system.o build/ulibc.o build/user.o build/bsp.o build/mutex.o
+	  build/stack.o build/syscall.o build/system.o build/ulibc.o build/user.o build/bsp.o build/mutex.o build/log.o
 U_S_SRC = kernel/klibs.S lib/ulibs.S
 U_S_OBJ = build/klibs.o build/ulibs.o
 U_LIBS	=
@@ -30,12 +30,12 @@ all:	build build/prog.o
 build: 
 	@echo "Building HostOS....."
 	mkdir -p build
-	cd boot &&  make && cp *.o ../build/ && cp *.b ../build/
 	cd kernel && make && cp *.o ../build/
 	cd lib && make && cp *.o ../build/
 	cd utils && make
 	cd test && make && cp *.o ../build/
 	cd smp && make && cp *.o ../build/
+	cd boot &&  make && cp *.o ../build/ && cp *.b ../build/
 
 BOOT_OBJ = build/bootstrap.b
 BOOT_SRC = boot/bootstrap.S
@@ -51,12 +51,12 @@ SOURCES = $(BOOT_SRC) $(S_SRC) $(C_SRC)
 
 #usb.image: build/bootstrap.b build/prog.b build/prog.nl utils/BuildImage utils/Offsets #prog.dis 
 usb.image: build build/bootstrap.b build/prog.b utils/BuildImage utils/Offsets #prog.dis 
-	utils/BuildImage -d usb -o build/usb.image -b build/bootstrap.b build/prog.b 0x10000
+	utils/BuildImage -d usb -o build/usb.image -b build/bootstrap.b build/prog.b 0x10000 build/trampoline.b 0x8000
 
 #floppy.image: build/bootstrap.b build/prog.b build/prog.nl utils/BuildImage utils/Offsets #prog.dis 
 #floppy.image: build/bootstrap.b build/prog.b utils/BuildImage utils/Offsets #prog.dis 
 floppy.image: build build/prog.b
-	utils/BuildImage -d floppy -o build/floppy.image -b build/bootstrap.b build/prog.b 0x10000
+	utils/BuildImage -d floppy -o build/floppy.image -b build/bootstrap.b build/prog.b 0x10000 build/trampoline.b 0x8000
 
 build/prog.out: $(OBJECTS)
 	$(LD) -o build/prog.out $(OBJECTS)
