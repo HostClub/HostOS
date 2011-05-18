@@ -1,3 +1,6 @@
+#ifndef _usb_something_h_
+#define _usb_something_h_
+
 //PCI Stuff
 #define BASE_MASK 0xFFFFFF00
 uint32_t _BASE;
@@ -181,7 +184,7 @@ uint32_t * _CONFIGFLAG;
 //Non-Spec Globals
 
 uint32_t _N_PORTS;
-uint32_t _MAX_PACKET_LENGTH = 64;
+//uint32_t _MAX_PACKET_LENGTH = 64;
 
 /*
 struct _qtd
@@ -248,3 +251,4 @@ struct _qtd_head
 //Private method decs
 
 
+#endif

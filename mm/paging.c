@@ -15,6 +15,7 @@
 #include "framefunc.h"
 #include "mm.h"
 #include "support.h"
+#include "../drivers/USB/usb_ehci_defs.h"
 
 // 4gb?
 //#define PHYS_MEM_SIZE 0x100000000
@@ -30,6 +31,7 @@
 #define PAGE_PRESENT(a) (a&0x1)
 #define PAGE_RW(a) (a&0x2)
 #define PAGE_USER(a) (a&0x4)
+#define USB_MEM  0xE0904000
 //TODO: More paging errors
 
 #define PAGE_DEBUG
@@ -101,7 +103,7 @@ page_t *get_page(uint32_t addr, int create, page_dir_t *dir){
     uint32_t phys;
     dir->tables[table] = (page_table_t*)kalloc(sizeof(page_table_t), &phys, 1);
     _memclr(dir->tables[table], PAGE_SIZE);
-    dir->phys_tables[table] = phys | DEFAULT_BITS;
+    dir->phys_tables[table] = phys | 0x7;
     return &dir->tables[table]->p[page];
   }
     return 0;
@@ -123,7 +125,27 @@ void __page_fault_handler( int vector, int code ){
   if(PAGE_USER(addr)){
     c_printf("user mode ");
   }
-  c_printf("\n 0x%x\n", addr);
+
+  /*
+  //falloc( get_page(*_USBCMD ,1,base_dir), 1, 1);
+  if(code == 0){
+    page_t* page = get_page(addr,1,base_dir);
+    c_printf("\npage: %x\n",page);
+    falloc(page, 0, 0);
+    c_printf("before I return\n");
+    return;
+  }
+    
+  
+
+  if(addr >= USB_MEM){
+    c_puts("in USB mem\n");
+
+
+    return;
+  }
+  */
+  c_printf("\n 0x%x   code: %d\n", addr, code);
 
   _kpanic("__page_fault_handler", "Page fault :(", 0);
 }

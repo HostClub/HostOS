@@ -295,7 +295,7 @@ void _init( void ) {
 	_syscall_init();
 	_sched_init();
 	_clock_init();
-	_pci_init();
+	//_pci_init();
 	_paging_init();
 
 	c_puts( "\n" );
@@ -303,7 +303,6 @@ void _init( void ) {
 	c_puts(" Ending init\n");
 	checkCPUs();
 
-	//__panic("SSSSSSSSHHHHIIIIIIIIITTT");
 	/*
 	** Create the initial system ESP
 	**

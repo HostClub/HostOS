@@ -17,6 +17,7 @@ uint32_t port_statuses[DEFAULT_NUM_PORTS];
 
 struct _qtd_head * queue_head;
 uint8_t * data_buffer;
+uint32_t _MAX_PACKET_LENGTH = 32;
 
 
 struct _qtd_head * _create_blank_qtd(int device , int num);
@@ -389,6 +390,7 @@ void _isr_usb_int(int vector , int code)
 
 	__outb( PIC_MASTER_CMD_PORT, PIC_EOI );
 	__outb( PIC_SLAVE_CMD_PORT, PIC_EOI );
+
 
 }
 
