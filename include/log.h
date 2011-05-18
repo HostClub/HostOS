@@ -7,10 +7,10 @@
 #define DL_DEBUG   0
 
 typedef enum _debug_level {
-	l_error,
-	l_warning,
+	l_debug,
 	l_info,
-	l_debug
+	l_warning,
+	l_error
 } debug_level_e;
 
 void inline error(char *str, ...);

@@ -197,7 +197,7 @@ MPFloatPointer_t *findMPFPS(void);
 
 void strncpy(char *, char *, int);
 
-uint32_t checkCPUs(void);
+int32_t checkCPUs(void);
 
 void initSMP(void);
 

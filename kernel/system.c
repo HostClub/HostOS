@@ -301,7 +301,7 @@ void _init( void ) {
 	c_puts( "\n" );
 
 	c_puts(" Ending init\n");
-	checkCPUs();
+	initSMP();
 
 	/*
 	** Create the initial system ESP
