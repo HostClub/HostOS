@@ -1,0 +1,48 @@
+Page structures taken from diagrams on : http://wiki.osdev.org/Paging
+
+Page Table
+
+31        12 11    9 8 7 6 5 4 3 2 1 0
+ _____________________________________
+| phys page | AVAIL |G|0|D|A|C|W|U|R|P|
+|  address  |       | | | | | | | | | |
+ -------------------------------------
+
+G- Global - prevents the translation lookaside buffer from updating the address
+D- Dirty - page has been written to
+A- Accessed
+C- Cache disabled
+W- Write-through
+U- User/Supervisor
+R- Read/Write
+P- Present
+
+General overview:
+
+   -----------
+   |dir table|
+   -----------
+       |
+       |
+       |
+    | ----------|
+1   | page table|------------>| entry|
+0   | --------- |             |------| 1
+2   | ....      |             | .... | 0
+4   | ----------|             |------| 2
+    | page table|             | entry| 4
+    ------------
+       |
+       |
+       |-------> entry
+                 -----  1
+                 ...    0
+                 -----  2
+                 entry  4
+
+
+Decription:
+  sets up the structures needed for the operating system to 
+  enable paging, works with the mm module to do memory management
+  contains the page_fault handler which currently just panics
+

@@ -1,0 +1,6 @@
+Description:
+  Framefunc is mostly just a utility function for paging.
+  it is a bitmap that the physical frame stores it's data in.
+  The function also allocates and frees frames when paging
+  needs these paging.
+
