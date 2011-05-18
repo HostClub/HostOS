@@ -1,37 +1,5 @@
 Page structures taken from diagrams on : http://wiki.osdev.org/Paging
 
-The Page Directory:
-
-31        12 11    9 8 7 6 5 4 3 2 1 0
- _____________________________________
-| page tbl  | AVAIL |G|S|0|A|D|W|U|R|P|
-|  address  |       | | | | | | | | | |
- -------------------------------------
-
-[With 4mb pages,  bits 21 - 11 are Reserved]
-
-G: Ignored
-
-S: Page Size; stores the page size for the entry.  if set 4MiB, otherwise 4KiB
-    (Note: 4 MiB pages have to have PSE enabled)
-
-A: page has been accessed
-
-D: Cahce Disable; if set the page will not be cahced 
-
-W: 'Write-Through'; if set, write-through caching is enables, if not write-back
-     caching is enabled
-
-U: User\Supervisor'; Controls access to the page based on privilege level.  If
-    set it can be accessed by all, otherwise only supervisor
-
-R: 'Read/Write'; if set the page is read/write, otherwise read only.
-     (The WP bit determises if this is applied to userland [3A 2-20])
-
-P: Present; if the bit is set, the page is in physical memory at the moment.
-    (If the page is called, but not present, a page fault will occur) 
-
-
 Page Table
 
 31        12 11    9 8 7 6 5 4 3 2 1 0

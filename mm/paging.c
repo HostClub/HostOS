@@ -129,7 +129,7 @@ void __page_fault_handler( int vector, int code ){
   if(PAGE_USER(addr)){
     c_printf("user mode ");
   }
-  c_printf("\n 0x%d\n", addr);
+  c_printf("\n 0x%x\n", addr);
 
   _kpanic("__page_fault_handler", "Page fault :(", 0);
 }

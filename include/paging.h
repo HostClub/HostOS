@@ -14,14 +14,12 @@ typedef struct page {
   uint32_t pres     : 1;
   uint32_t rw       : 1;
   uint32_t user     : 1;
-//  uint32_t w_thr    : 1;
-//  uint32_t cache    : 1;
+  uint32_t w_thr    : 1;
+  uint32_t cache    : 1;
   uint32_t acces    : 1;
   uint32_t dirty    : 1;
-//  uint32_t w_thr    : 1;
-//  uint32_t cache    : 1;
-  uint32_t unknown  : 4;
-//  uint32_t global   : 1;
+  uint32_t unknown  : 1;
+  uint32_t global   : 1;
   uint32_t avail    : 3;
   uint32_t frame    : 20;
 } page_t;

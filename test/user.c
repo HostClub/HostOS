@@ -704,16 +704,16 @@ void init( void ) {
 
 	writec( '$' );
 
-  c_puts("alloc ");
+  writec("alloc ");
   uint32_t z = (uint32_t)kalloc(8, 0, 0);
   c_printf("z: 0x%x\n", z);
 
-  c_puts( "alloc " );
-  uint32_t a = (uint32_t)kalloc(8, 0, 0);
-  c_printf("a: 0x%x\n", a);
+//  c_puts( "alloc " );
+//  uint32_t a = (uint32_t)kalloc(8, 0, 0);
+//  c_printf("a: 0x%x\n", a);
 
-  c_puts( "free a\n" );
-  kfree((void*)a);
+  c_puts( "free z\n" );
+  kfree((void*)z);
 
   
   c_puts( "alloc " );

@@ -92,9 +92,12 @@ void *_halloc(heap_t *h, uint32_t size, int p_align){
       chunk_t* new = (chunk_t*)((int32_t)free + size + CHUNK_SIZE);
       if(p_align){
         new = (chunk_t*) (((uint32_t)new + 0x1000) - ((uint32_t)new&0xFFF));
+        size = 0x1000 + (size & 0xFFF);
+        c_puts("you actually want me aligned?\n");
         //TODO: MORE?!?
       }
-      new->head = size - free->head - CHUNK_SIZE; 
+      new->head = free->head - size - CHUNK_SIZE; 
+      //c_printf("size %d, free->head %d\n", size, free->head);
       new->prev_foot = size;
       new->fnext = free->fnext; 
       new->fprev = free->fprev; 
@@ -109,7 +112,8 @@ void *_halloc(heap_t *h, uint32_t size, int p_align){
       free->head  = size;
       free->fnext = 0;
       free->fprev = 0;
-      c_printf("prev %x, next %x\n", new->fprev, new->fnext);
+  //    c_printf("head %d, foot %d\n", new->head, new->prev_foot);
+ //     c_printf("head %d\n", free->head);
       return (void*)((uint32_t)free + CHUNK_SIZE);
 
 
@@ -136,13 +140,25 @@ void *_halloc(heap_t *h, uint32_t size, int p_align){
 }
 
 void coalesce(uint32_t new_head, chunk_t** m1, chunk_t** m2, chunk_t** m3){
+  c_puts("where ");
   (*m1)->head = new_head;
+  c_puts("does ");
   (*m1)->fnext = (*m2)->fnext;
+  c_puts("the ");
   if((*m2)->fnext){
     (*m2)->fnext->fprev = (*m1);
+    c_puts("rabbit ");
+
   }
+  //c_printf("\n (*m3)->prev_foot: %d\n", (*m3)->prev_foot);
+  //c_printf("\n (*m1)->head: %d\n", (*m1)->head);
+  //c_printf("\n (*m1): 0x%x\n", (*m1));
   (*m3) = (chunk_t*)((uint32_t)(*m1) + (*m1)->head + CHUNK_SIZE);
-  (*m3)->prev_foot = (*m1)->head;
+  c_puts("hole ");
+  //(*m3)->prev_foot = (*m1)->head;
+  c_puts("lead?\n ");
+
+
 }
 
 void _hfree( void *p, heap_t *h_ptr ){
@@ -164,7 +180,7 @@ void _hfree( void *p, heap_t *h_ptr ){
     chunk->fnext = h->free;
     h->free = chunk;
     chunk->fprev = 0;
-    c_printf("hfree, chunk->fnext: %x\n", chunk->fnext);
+    c_printf("hfree, next chunk: %x\n", h);
   }else{
     while(free){
       if(free > chunk){
@@ -188,8 +204,8 @@ void _hfree( void *p, heap_t *h_ptr ){
   chunk_t *next = (chunk_t*)NEXT_CHUNK(chunk);
   uint32_t new_head = 0;
   c_puts("about to merge?\n");
-  c_printf("next %x %x\n",prev, chunk->fprev);
-  c_printf("next %x %x\n",next, chunk->fnext);
+  //c_printf("next %x %x\n",next, next->prev_foot);
+  //c_printf("next %x %x\n",next, chunk->fnext);
   if(prev == chunk->fprev && next == chunk->fnext){
     c_printf("hfree, merge both\n");
     new_head = prev->head + (chunk->head + CHUNK_SIZE) +
@@ -198,6 +214,9 @@ void _hfree( void *p, heap_t *h_ptr ){
   }else if(next == chunk->fnext){
     c_printf("hfree, merge next\n");
     new_head = chunk->head + next->head + CHUNK_SIZE;
+    //c_printf("chunk->head %d\n", chunk->head);
+    //c_printf("next->head: %d\n", next->head);
+    //c_printf("new_head: %d\n", new_head);
     coalesce(new_head, &chunk, &next, &next);
   }else if(prev == chunk->fprev){
     c_printf("hfree, merge prev\n");
