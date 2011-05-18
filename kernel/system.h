@@ -65,6 +65,7 @@ void _zombify( pcb_t *pcb );
 */
 
 void _init( void );
+void _ap_init( void );
 
 #endif
 

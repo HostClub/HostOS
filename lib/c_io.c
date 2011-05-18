@@ -508,6 +508,10 @@ void c_printf( char *fmt, ... ){
 	__c_do_printf( -1, -1, &fmt );
 }
 
+void c_vprintf( char **fmt ){
+	__c_do_printf( -1, -1, fmt );
+}
+
 unsigned char scan_code[ 2 ][ 128 ] = {
 	{
 /* 00-07 */	'\377',	'\033',	'1',	'2',	'3',	'4',	'5',	'6',

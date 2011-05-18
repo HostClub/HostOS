@@ -274,7 +274,6 @@ void _kalloc_init( void ){
 	
 	//TODO UNCOMMENT THIS
 	for( addr = (volatile int *)&_end;
-	  //for( addr = (volatile int *)0xb0000000; 
 	    addr <= (volatile int *)0xd0000000;
 	    addr += increment ){
 		/*
