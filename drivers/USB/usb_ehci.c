@@ -4,6 +4,7 @@
 #include "support.h"
 #include "x86arch.h"
 #include "kalloc.h"
+#include "cakesh.h"
 
 #include "usb_ehci_defs.h"
 
@@ -176,6 +177,8 @@ void usb_ehci_init(struct _pci_dev * device)
 	*_USBINTR = usbintr;
 
 	c_printf("USBINTR %x\n" , *_USBINTR);
+
+	load_process("port_reset" , reset_ports);
 
 	while(1)
 	{
