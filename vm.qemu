@@ -2,7 +2,7 @@
 KVM=$(lsmod | grep kvm)
 [ -n "$KVM" ] && KVM='-enable-kvm'
 [ -z "$ROOT" ] && ROOT='..'
-qemu $KVM -s -S -m 256 -M pc -cpu qemu32 -fda build/floppy.image -boot a -no-acpi -no-frame -nographic -smp 4
+qemu $KVM -m 256 -M pc -cpu qemu32 -fda build/floppy.image -boot a -no-acpi -no-frame -nographic -no-kqemu 
 
 
 #Cntrl + a, x to kill 

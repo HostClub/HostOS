@@ -7,7 +7,7 @@ CPP = cpp
 CPPFLAGS = $(USER_OPTIONS) -nostdinc -iquote $(INCLUDES)
 
 CC = gcc
-CFLAGS = -fno-builtin -Wall -Wstrict-prototypes $(CPPFLAGS)
+CFLAGS = -fno-builtin -w $(CPPFLAGS)
 
 AS = as
 ASFLAGS =

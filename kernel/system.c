@@ -14,6 +14,7 @@
 
 #include "headers.h"
 
+#include "paging.h"
 #include "system.h"
 #include "clock.h"
 #include "process.h"
@@ -294,7 +295,7 @@ void _init( void ) {
 	_syscall_init();
 	_sched_init();
 	_clock_init();
-	_kalloc_init();
+  _paging_init();
 
 	c_puts( "\n" );
 

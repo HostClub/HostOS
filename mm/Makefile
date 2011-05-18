@@ -1,6 +1,6 @@
 BUILD_DIR = ../build
 
-USER_OPTIONS = -DCLEAR_BSS_SEGMENT -DISR_DEBUGGING_CODE -DSP2_CONFIG -ggdb
+USER_OPTIONS = -DCLEAR_BSS_SEGMENT -DISR_DEBUGGING_CODE -DSP2_CONFIG
 INCLUDES = -I. -I../include
 
 CPP = cpp
@@ -12,8 +12,7 @@ CFLAGS = -fno-builtin -Wall -Wstrict-prototypes $(CPPFLAGS)
 AS = as
 ASFLAGS =
 
-all: clock.o klibc.o klibs.o process.o queue.o scheduler.o \
-		 stack.o support.o syscall.o system.o isr_stubs.o sio.o
+all: framefunc.o mm.o paging.o
 
 .SUFFIXES:>-.S .b
 

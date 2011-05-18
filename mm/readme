@@ -1,0 +1,18 @@
+Page structures taken from diagrams on : http://wiki.osdev.org/Paging
+
+Page Table
+
+31        12 11    9 8 7 6 5 4 3 2 1 0
+ _____________________________________
+| phys page | AVAIL |G|0|D|A|C|W|U|R|P|
+|  address  |       | | | | | | | | | |
+ -------------------------------------
+
+G- Global - prevents the translation lookaside buffer from updating the address
+D- Dirty - page has been written to
+A- Accessed
+C- Cache disabled
+W- Write-through
+U- User/Supervisor
+R- Read/Write
+P- Present

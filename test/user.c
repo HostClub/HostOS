@@ -13,6 +13,8 @@
 #include "headers.h"
 
 #include "user.h"
+#include "paging.h"
+#include "mm.h"
 
 
 #include "pci.h"
@@ -723,10 +725,10 @@ void init( void ) {
 
 	writec( '$' );
 
-	/*
+  /*
 	** Always start the idle process first
 	*/
-
+/*
 	pid = fork();
 	if( pid < 0 ) {
 		c_puts( "init: can't fork() idle\n" );
@@ -735,7 +737,8 @@ void init( void ) {
 		c_puts( "init: can't exec idle\n" );
 		exit( X_FAILURE );
 	}
-/*
+
+
 #ifdef SPAWN_A
 	pid = fork();
 	if( pid < 0 ) {
@@ -964,7 +967,7 @@ void init( void ) {
 
 	writec( '!' );
 
-	/*
+  /*	
 	** At this point, we go into an infinite loop
 	** waiting for our children (direct, or inherited)
 	** to exit.
@@ -978,11 +981,10 @@ void init( void ) {
 		// sleep( SECONDS_TO_TICKS(5) );
 	}
 
-	/*
+/*	
 	** SHOULD NEVER REACH HERE
-	*/
+*/	
 
 	c_printf( "*** INIT IS EXITING???\n" );
 	exit( X_FAILURE );
-
 }
