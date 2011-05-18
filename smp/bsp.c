@@ -204,6 +204,7 @@ bool_t startup_CPU(int id) {
 void startup_cpus(cpus_t *cpus) {
 	int i;
 
+	info("Attempting to start %d processor(s)\n", cpus->total_count - 1);
 	for (i = 1; i < cpus->total_count; i++) {
 		cpus->infos[i].apicID = i;
 
@@ -219,7 +220,9 @@ void startup_cpus(cpus_t *cpus) {
 void initSMP() {
 	int cpu_count = checkCPUs();
 
-	if (cpu_count == 0) {
+	setDebugLevel(l_info);
+
+	if (cpu_count == -1) {
 		error("Error while checking number of CPUs\n");
 		return;
 	}
@@ -242,7 +245,7 @@ void initSMP() {
 ** there was an error.
 */
 
-uint32_t checkCPUs() {
+int32_t checkCPUs() {
 	uint32_t id;
 	uint32_t data[5];
 	uint32_t maxCpuIdOp;
@@ -254,7 +257,7 @@ uint32_t checkCPUs() {
 
 	if (!id) {
 		info("CPUID not supported!!!\n");
-		return 0;
+		return -1;
 	}
 
 
@@ -296,7 +299,7 @@ uint32_t checkCPUs() {
 				break;
 			default:
 				info("Unknown Processor)\n");
-				return 0;
+				return -1;
 		}
 	}
 
