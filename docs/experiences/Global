@@ -1,0 +1,12 @@
+Paging:
+  I spent a lot of time on really dumb stuff, mostly tring to optimize things
+  Also whenever I got a bug that I couldnt fix I would drop doing any
+  work for a few days, and then I would notice that the bug was somethin
+  real dumb like trying to free a reference to a memory location 
+  rather than a memory location.
+  I think we also merged too late, I found a bunch of paging bugs
+  right before the presentation that I would of been able to fix if I had
+  the time.
+  I think if I had a week more I could get a lot more done, and basically
+  this has been a lesson in get your work done before you optimize for me.
+  Also look for stupid bugs before complicated ones

@@ -1,0 +1,21 @@
+Description
+  First-fit memory allocator, before paging is enabled the allocator is inplace.
+  Once paging is in place the memor is divided in chunks, chunks of 
+  any size can be allocated, and page chuncks can also be allocated.
+
+  the block manager has a linked list of free nodes so it can search quickly
+  
+
+  Allocate:
+    Find the first free chunk, split it and allocate it.
+
+  Deallocation:
+    Mark the chunk as free, update the list
+    see if any space can be dynamically reallocated to the 
+    manager
+
+
+functions:
+  _sm_init(); returns the block of memory
+  _sm_alloc(block manager, size, aligned)
+  _sm_free(ptr, block manager ptr)
