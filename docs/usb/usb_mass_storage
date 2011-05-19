@@ -1,0 +1,10 @@
+The current mass storage implementation is just a skeleton of what
+would become the mass storage driver. Some of it is currently
+psuedocode. It is meant to interface with a filesystem so it 
+provides two main methods, usb_ms_read and usb_ms_write, which would
+allow a filesystem to write or read a buffer of a certain length from
+a location on the specified disk. Right now it merely sets up the
+structures that are required to make this transaction. In the 
+future the id field which is passed in will probably be replaced by
+a structure or more complicate data structure which represents
+a location and disk to write to.

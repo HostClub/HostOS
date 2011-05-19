@@ -27,4 +27,22 @@ SMP:
   I've had a lot of trouble (as you know) with assembly issues. I can only
   attribute these issues to the tools being open source.
 
-
+USB:
+ Programming EHCI drivers was an exersize in frustration. The issues I had with
+ hardware was that any little mistake could easily stump me dor days, so I ended
+ up not completing nearly as much as I desired. 
+ However, at this point I can say that I've learned more about USB and EHCI
+ than I've ever desired to know, and I understand thr process by which I
+ can communicate and send data to a USB device. In this respect the specifications
+ were excellent, and looking at the few hobbyist implementations of EHCI was also
+ helpful.
+ I had been interested in doing a more complicated debugging system like Crawford 
+ did, however since QEMU does not have an EHCI emulator I used VirtualBox. 
+ Emulation did help, because I was able to mostly test my code whereever I wanted,
+ and quickly, however the differences that showed up between emulation and
+ harware and the confusion that arose because of this made it more of a 
+ hassle than it was worth.
+ If I had the chance to take this class over again, I would probably be a 
+ little less ambitious, however I would also study the documentation much earlier.
+ Most of my confusion caused throughout the quarter came from an incomplete 
+ reading of the specification, and this slowed me down.

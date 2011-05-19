@@ -1,1 +1,94 @@
-usb_ehci provides an interface between the `
+usb_ehci provides an interface between the Enhanced Host Controller
+and system software. Since all USB devices eventually have to talk through
+the EHC, usb_ehci is the last bit of system software in any USB system.
+My current implementation is loaded from pci_init, and is called 
+with a reference to a PCI device structure so that I can load the
+base address of the USB device information registers. usb_ehci_init
+configures the EHC to allow system software to use it, and this 
+involves first wrestling control of the EHC from the BIOS, and then 
+resetting all the ports. Then we configure the host controller based on 
+the information register, as well as set up any interrupts we wish
+to recieve. usb_ehci_init at this point contains a while loop at 
+the end which simply polls information about devices being plugged in.
+Eventually this while loop would be replaced by a user process, and 
+usb_ehci_init would be called from the kernel rather than the
+pci_init.
+In order to communicate with the EHC, mass storage devices use the asynchronous
+queue, which is a circularly linked queue structure. Thus, the EHCI driver
+must provide access to this asynchronous queue, which it does through
+_add_async_schedule. This allows other USB drivers to add a _qtd_head 
+structure into the asynchronous queue. Right now, there is no linking involved,
+and any added queue replaces a currently existing queue. 
+All communication with the host controller is done with standardized structures,
+so the current implementation provides helper methods for constructing these
+structures. Other USB drivers can create both QTD (queue transfer descriptors)
+which describe an individual transaction, and QTD Heads, which contain a group
+of qtd's. Both the _create_qtd_head and _create_qtd provide an interface
+for contructing these structures, which then get passed back into other 
+methods within usb_ehci.
+Most communication with the EHC is done through interrupts, so there is
+also an interrupt handler which is installed which mostly just
+resets the registers to allow another interrupt.
+
+Here are some important structures which are used in my EHCI implementation, 
+and most of these are inspired from the specification or from availible
+hobbyist implementations of EHCI.
+
+struct _qtd_token
+{
+	uint8_t status;
+
+	uint8_t pid:          2;
+	uint8_t error_counter: 2;
+	uint8_t curr_page:     3;
+	uint8_t interrupt:    1;
+	uint16_t bytes_to_transfer:      15;
+	uint16_t data_toggle:  1;
+
+} __attribute__((packed));
+
+struct _qtd
+{
+	uint32_t next;
+	uint32_t alternate;
+	struct _qtd_token token;
+	uint32_t data_buffer[5];
+	uint32_t extend_data_buffer[5];	
+} __attribute__((packed));
+
+
+struct _qtd_head
+{
+	uint32_t qhlp;
+
+	uint32_t device_address:       7;
+	uint32_t inactive:            1;
+	uint32_t endpoint:            4;
+	uint32_t endpoint_speed:       2;
+	uint32_t data_toggle:   1;
+	uint32_t H:                   1;
+	uint32_t max_packet_length:    11;
+	uint32_t control_edndpoint_flag: 1;
+	uint32_t nak_count_reload:      4;
+	
+	uint8_t interrupt_schedule_mask;
+	uint8_t split_completion_mask;
+	uint16_t hub_address:             7;
+	uint16_t port_number:          7;
+	uint16_t mult:                2;
+	
+	uint32_t curr_qtd;
+	struct _qtd qtd;
+} __attribute__((packed));
+
+struct _ehci_request
+{
+	uint8_t type;
+	uint8_t request;
+	uint8_t value_high;
+	uint8_t value_low;
+	uint16_t index;
+	uint16_t length;
+} __attribute__((packed));
+
+
