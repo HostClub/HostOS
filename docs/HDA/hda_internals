@@ -1,0 +1,42 @@
+=========================
+  HDA Module Internals
+=========================
+
+
+PCI INTERFACE
+=============
+
+In order to interface with the ICH7 Intel High Definition Audio controller, Its PCI
+configuration space registers must be accessible from the device driver. Using those
+registers, the driver enables HDA interrupts, finds the location of the HDA memory-
+mapped registers and stores it for later use.
+
+
+HDA CONTROLLER
+==============
+
+The HDA Controller registers are memory mapped in 32-bit memory space at the address
+discovered in the PCI configuration space. The driver allocates buffers for sending
+stream and command data over the link to the codec(s).
+
+Buffer Descriptor List: A contiguous block of 32 16-byte entries that describe each 
+	data buffer in an audio stream. Can describe an input or an output stream.
+	[64 bits Buffer addr.][32 bits buffer length] [32 bits Interrupt flag]
+
+
+CORB / RIRB: Circular command buffers used to send command and response data to/from
+	a codec. (Not used in leiu of Immediate Command and Response Registers)
+
+
+CODEC INTERFACE
+===============
+
+The Codec Interface provides easy access to codec configuration using the Immediate
+Command and Response Registers.
+
+Immediate Command/Response: 3 memory mapped registers in the HDA Controller
+		IC: Immediate Command takes the 32 bit payload of a codec command
+		IR: Is populated with the 32 bit response of the codec
+		IRS: Status flags that tell the software/codec that a response/command is available
+
+

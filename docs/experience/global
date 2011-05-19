@@ -1,0 +1,24 @@
+
+Samuel Roden - Intel HDA
+=========================
+
+At the beginning of the quarter, I had originally set out to implement a device 
+driver for Intel HD Audio devices. I started to research HDA and discovered that
+it was a much larger specification that its predecessor AC97. In the intersests of 
+time I decided that it would probably be advantageous to try for AC97 instead. So,
+because both AC97 and USB reside behind the PCI bus, myself and Bob Schriver created the PCI functionality. It was after this that I discovered that the AC97 PCI 
+function was nowhere to be found on the DSL machines. I attempted to see if the
+BIOS was explicity disabling it by toggling legacy audio, but the AC97 device would not appear. So, because the HDA function was clearly found by the PCI driver, I
+decided to switch back to doing HDA. In retrospect, reenabling the AC97 PCI
+function would have taken less time and saved me a lot of grief in the long run.
+I saved some time at the beginning because the BIOS did some initial configuration
+for me, including allocating the memory mapped registers. I allocated the necessary
+structures and populated the registers as well as I could, but the DMA streams would not start up. There were no errors in the reporting registers, and the RUN bits
+were set in the stream. I had no idea what the problem was so I delved into the
+codec configuration to see if that would help. I was successfully able to interface with the codec, but the stream still refused to start. I spent way too much time
+just trying to get an initial stream started that I wasted a lot of time that
+could've be spent integrating and adding user level access to the sound functions.
+We waited much too long to integrate, especially because one of the projects was
+paging, and that has to take memory mappings into account. So at the end it was too much of a mad dash just to get our individual projects to work that the integration
+was a pretty hectic effort with little results.
+

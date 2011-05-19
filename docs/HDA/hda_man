@@ -1,0 +1,46 @@
+Intel HDA functions:
+
+============================================================
+void _hda_init(void)
+
+PCI must be initialized before calling this function.
+Initializes HDA controller.
+
+===========================================================
+uint32_t _hda_imm_command_8( uint8_t cad, uint8_t nid, uint16_t vid , uint8_t payload )
+
+Sends an immediate command to a codec and returns its 32bit response. Has an 8bit payload. 
+HDA must be initialized. See ALC888 codec documentation for which verbs require 8bit payload.
+
+
+PARAMETERS: 
+
+	cad = the codec address to send the command to
+	nid = the node inside the codec to send the command to
+	vid = the verb id of the command
+	payload = the data to send along with the command
+
+===========================================================
+uint32_t _hda_imm_command_16( uint8_t cad, uint8_t nid, uint8_t vid , uint16_t payload )
+
+Sends an immediate command to a codec and returns its 32bit response. Has a 16bit payload. 
+HDA must be initialized. See ALC888 codec documentation for which verbs require 16bit payload.
+
+PARAMETERS: 
+
+	cad = the codec address to send the command to
+	nid = the node inside the codec to send the command to
+	vid = the verb id of the command
+	payload = the data to send along with the command
+
+===========================================================
+void _hda_reset_codec( uint8_t cid )
+
+Sends an immediate command to a codec to force it through its reset cycle. All codec values will be
+reset to their power-on defaults
+
+PARAMETERS: 
+
+	cid = the codec address to send the command to
+
+
